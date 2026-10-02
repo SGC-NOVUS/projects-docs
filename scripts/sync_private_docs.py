@@ -116,7 +116,12 @@ def is_probably_non_english(text: str) -> bool:
     """
     cyr = len(re.findall(r"[А-Яа-яЁёІЇЄієїґҐ]", text))
     latin = len(re.findall(r"[A-Za-z]", text))
-    return cyr >= 40 and cyr > latin
+    if cyr < 40:
+        return False
+    if latin == 0:
+        return True
+    # If Cyrillic is a meaningful share of prose, keep it out of EN SSOT.
+    return (cyr / latin) >= 0.15
 
 
 def dump_markdown_doc(frontmatter: Dict[str, object], body: str) -> str:
@@ -277,29 +282,44 @@ def clone_repository(source: SourceSpec, token: str, clone_root: pathlib.Path) -
     return target
 
 
+def resolve_local_repository(source: SourceSpec, local_root: pathlib.Path) -> pathlib.Path:
+    repo_name = source.repo.split("/")[-1]
+    target = local_root / repo_name
+    if not target.exists() or not target.is_dir():
+        raise RuntimeError(f"local source repo not found: {target}")
+    return target
+
+
 def relative(path: pathlib.Path) -> str:
     return str(path.relative_to(ROOT)).replace("\\", "/")
 
 
 def main() -> int:
     token = os.getenv("DOCS_SYNC_GITHUB_TOKEN", "").strip()
-    if not token:
-        raise RuntimeError("DOCS_SYNC_GITHUB_TOKEN is required for private source sync")
+    local_root_raw = os.getenv("DOCS_SYNC_LOCAL_ROOT", "").strip()
+    local_root = pathlib.Path(local_root_raw).resolve() if local_root_raw else None
+
+    if not token and local_root is None:
+        raise RuntimeError("DOCS_SYNC_GITHUB_TOKEN is required (or use DOCS_SYNC_LOCAL_ROOT for local bootstrap)")
 
     default_version, sources = load_sources(SOURCES_CONFIG)
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     clone_root = TMP_DIR / "source-repos"
-    if clone_root.exists():
-        shutil.rmtree(clone_root)
-    clone_root.mkdir(parents=True, exist_ok=True)
+    if local_root is None:
+        if clone_root.exists():
+            shutil.rmtree(clone_root)
+        clone_root.mkdir(parents=True, exist_ok=True)
 
     generated_files: Set[pathlib.Path] = set()
     changed_files: List[pathlib.Path] = []
     skipped_non_english: List[str] = []
 
     for source in sources:
-        repo_dir = clone_repository(source, token, clone_root)
+        if local_root is not None:
+            repo_dir = resolve_local_repository(source, local_root)
+        else:
+            repo_dir = clone_repository(source, token, clone_root)
 
         for md_path in sorted(repo_dir.rglob("*.md")):
             source_rel = md_path.relative_to(repo_dir)
