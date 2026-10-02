@@ -16,6 +16,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
@@ -48,6 +49,8 @@ DEFAULT_GEMINI_MODEL_FALLBACKS = [
     "gemini-1.5-flash-latest",
     "gemini-1.5-flash",
 ]
+
+TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
 
 
 @dataclass
@@ -285,9 +288,46 @@ def gemini_translate(
     }
 
     last_error = None
+    try:
+        max_retries = max(0, int(os.getenv("GEMINI_MAX_RETRIES", "3")))
+    except ValueError:
+        max_retries = 3
+    try:
+        retry_base_seconds = float(os.getenv("GEMINI_RETRY_BASE_SECONDS", "1.5"))
+    except ValueError:
+        retry_base_seconds = 1.5
+
     for idx, model in enumerate(models):
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-        resp = requests.post(url, json=payload, timeout=120)
+
+        resp = None
+        for attempt in range(max_retries + 1):
+            try:
+                resp = requests.post(url, json=payload, timeout=120)
+            except requests.RequestException as exc:
+                if attempt >= max_retries:
+                    raise
+                delay = retry_base_seconds * (2 ** attempt)
+                print(
+                    f"WARN: request to Gemini model '{model}' failed ({exc}); retrying in {delay:.1f}s",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+                continue
+
+            if resp.status_code in TRANSIENT_HTTP_STATUSES and attempt < max_retries:
+                delay = retry_base_seconds * (2 ** attempt)
+                print(
+                    f"WARN: Gemini model '{model}' returned HTTP {resp.status_code}; retrying in {delay:.1f}s",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+                continue
+
+            break
+
+        if resp is None:
+            raise RuntimeError(f"unable to get response from Gemini model '{model}'")
 
         if resp.status_code >= 400:
             detail = ""
@@ -295,6 +335,16 @@ def gemini_translate(
                 detail = str((resp.json() or {}).get("error", {}).get("message", "")).strip()
             except Exception:
                 detail = resp.text.strip()
+
+            can_retry_with_next = resp.status_code in TRANSIENT_HTTP_STATUSES and idx < len(models) - 1
+            if can_retry_with_next:
+                short_detail = detail[:180] if detail else "temporary upstream error"
+                print(
+                    f"WARN: Gemini model '{model}' still failing with HTTP {resp.status_code} after retries ({short_detail}); trying next candidate",
+                    file=sys.stderr,
+                )
+                last_error = f"{model}: HTTP {resp.status_code} {short_detail}"
+                continue
 
             can_retry_with_next = resp.status_code in (400, 403, 404) and idx < len(models) - 1
             if can_retry_with_next:
