@@ -55,7 +55,11 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add content .tmp/localized-files.txt .tmp/docs-sync-payload.json .tmp/synced-english-files.txt .tmp/source-sync-report.json
+          git add content
+          [[ -f .tmp/localized-files.txt ]] && git add .tmp/localized-files.txt || true
+          [[ -f .tmp/docs-sync-payload.json ]] && git add .tmp/docs-sync-payload.json || true
+          [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
+          [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
           git commit -m "chore(docs): sync source docs and auto-generate localizations"
           git push
 
