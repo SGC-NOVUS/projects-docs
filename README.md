@@ -55,3 +55,36 @@ English SSOT intake guard:
 
 - `DOCS_SYNC_GITHUB_TOKEN` - token for cloning private repos.
 - `GEMINI_API_KEY` - token for Gemini localization.
+
+## Gemini Cascade (Free Tier Friendly)
+
+Localization uses a model cascade defined in `config/locales.json` under `gemini_model_cascade`.
+If the current model is quota/rate exhausted (for example HTTP 429), the pipeline automatically
+falls through to the next model in cascade order.
+
+Current cascade:
+- `gemini-3.8-flash`
+- `gemini-3.7-flash`
+- `gemini-3.6-flash`
+- `gemini-3.5-flash-lite`
+- `gemini-3.5-flash`
+
+## Gemini Smoke Check
+
+List configured cascade without API calls:
+
+```bash
+python3 scripts/smoke_gemini_cascade.py
+```
+
+Probe cascade until first successful model:
+
+```bash
+GEMINI_API_KEY=*** python3 scripts/smoke_gemini_cascade.py --probe
+```
+
+Probe all configured models:
+
+```bash
+GEMINI_API_KEY=*** python3 scripts/smoke_gemini_cascade.py --probe-all
+```

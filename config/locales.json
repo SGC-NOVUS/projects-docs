@@ -2,5 +2,47 @@
   "source_locale": "en",
   "target_locales": ["uk", "ru"],
   "gemini_model": "gemini-3.8-flash",
+  "gemini_model_cascade": [
+    {
+      "name": "Gemini 3.8 Flash",
+      "model": "gemini-3.8-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "docs_url": "https://aistudio.google.com/docs/models/gemini-3.8-flash"
+    },
+    {
+      "name": "Gemini 3.7 Flash",
+      "model": "gemini-3.7-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "docs_url": "https://aistudio.google.com/docs/models/gemini-3.7-flash"
+    },
+    {
+      "name": "Gemini 3.6 Flash",
+      "model": "gemini-3.6-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "docs_url": "https://aistudio.google.com/docs/models/gemini-3.6-flash"
+    },
+    {
+      "name": "Gemini 3.5 Flash Lite",
+      "model": "gemini-3.5-flash-lite",
+      "rpm": 15,
+      "tpm": 250000,
+      "rpd": 500,
+      "docs_url": "https://aistudio.google.com/docs/models/gemini-3.5-flash-lite"
+    },
+    {
+      "name": "Gemini 3.5 Flash",
+      "model": "gemini-3.5-flash",
+      "rpm": 5,
+      "tpm": 250000,
+      "rpd": 20,
+      "docs_url": "https://aistudio.google.com/docs/models/gemini-3.5-flash"
+    }
+  ],
   "content_glob": "content/**/*.en.md"
 }

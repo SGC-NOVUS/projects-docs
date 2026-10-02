@@ -169,7 +169,36 @@ def normalize_model_name(name: str) -> str:
     return name
 
 
-def build_model_candidates(preferred_model: str) -> List[str]:
+def model_from_cascade_entry(entry: object) -> str:
+    if isinstance(entry, str):
+        return normalize_model_name(entry)
+
+    if isinstance(entry, dict):
+        for key in ("model", "model_id", "id", "code"):
+            raw = str(entry.get(key, "")).strip()
+            if raw:
+                return normalize_model_name(raw)
+
+    return ""
+
+
+def load_configured_model_cascade(config: Dict[str, object]) -> List[str]:
+    raw = config.get("gemini_model_cascade", [])
+    if not isinstance(raw, list):
+        return []
+
+    out: List[str] = []
+    seen = set()
+    for item in raw:
+        model = model_from_cascade_entry(item)
+        if not model or model in seen:
+            continue
+        seen.add(model)
+        out.append(model)
+    return out
+
+
+def build_model_candidates(preferred_model: str, configured_cascade: List[str] | None = None) -> List[str]:
     env_fallbacks = [
         normalize_model_name(x)
         for x in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",")
@@ -177,10 +206,17 @@ def build_model_candidates(preferred_model: str) -> List[str]:
     ]
 
     preferred_model = normalize_model_name(preferred_model)
-    if preferred_model.endswith("-latest"):
-        candidates = [preferred_model, preferred_model[: -len("-latest")]]
+
+    candidates: List[str] = []
+    if configured_cascade:
+        candidates.extend([normalize_model_name(x) for x in configured_cascade if normalize_model_name(x)])
+        if preferred_model and preferred_model not in candidates:
+            candidates.insert(0, preferred_model)
     else:
-        candidates = [f"{preferred_model}-latest", preferred_model]
+        if preferred_model.endswith("-latest"):
+            candidates = [preferred_model, preferred_model[: -len("-latest")]]
+        else:
+            candidates = [f"{preferred_model}-latest", preferred_model]
 
     candidates.extend(env_fallbacks)
     candidates.extend(DEFAULT_GEMINI_MODEL_FALLBACKS)
@@ -214,8 +250,8 @@ def fetch_available_models(api_key: str) -> List[GeminiModelInfo]:
     return out
 
 
-def resolve_gemini_model(api_key: str, preferred_model: str) -> str:
-    candidates = build_model_candidates(preferred_model)
+def resolve_gemini_model(api_key: str, preferred_model: str, configured_cascade: List[str] | None = None) -> str:
+    candidates = build_model_candidates(preferred_model, configured_cascade)
     try:
         available = fetch_available_models(api_key)
     except Exception as exc:
@@ -334,9 +370,21 @@ def gemini_translate(
                 detail = resp.text.strip()
 
             detail_l = detail.lower()
-            if resp.status_code == 429 and ("quota" in detail_l or "billing" in detail_l):
-                short_detail = detail[:180] if detail else "quota exceeded"
-                raise RuntimeError(f"gemini quota exceeded: {short_detail}")
+            if resp.status_code == 429 and (
+                "quota" in detail_l
+                or "billing" in detail_l
+                or "resource_exhausted" in detail_l
+                or "rate" in detail_l
+            ):
+                short_detail = detail[:180] if detail else "quota/rate exhausted"
+                if idx < len(models) - 1:
+                    print(
+                        f"WARN: Gemini model '{model}' exhausted quota/rate ({short_detail}); trying next candidate",
+                        file=sys.stderr,
+                    )
+                    last_error = f"{model}: HTTP 429 {short_detail}"
+                    continue
+                raise RuntimeError(f"gemini quota/rate exhausted: {short_detail}")
 
             can_retry_with_next = resp.status_code in TRANSIENT_HTTP_STATUSES and idx < len(models) - 1
             if can_retry_with_next:
@@ -397,6 +445,7 @@ def main() -> int:
     source_locale = str(config.get("source_locale", "en"))
     target_locales = list(config.get("target_locales", []))
     preferred_model = str(config.get("gemini_model", "gemini-2.5-flash"))
+    configured_cascade = load_configured_model_cascade(config)
     content_glob = str(config.get("content_glob", "content/**/*.en.md"))
 
     if source_locale != "en":
@@ -416,8 +465,8 @@ def main() -> int:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is required")
 
-    model = resolve_gemini_model(api_key, preferred_model)
-    model_candidates = [model] + [m for m in build_model_candidates(preferred_model) if m != model]
+    model = resolve_gemini_model(api_key, preferred_model, configured_cascade)
+    model_candidates = [model] + [m for m in build_model_candidates(preferred_model, configured_cascade) if m != model]
     strict_translation = os.getenv("TRANSLATION_STRICT", "").strip().lower() in {"1", "true", "yes"}
 
     try:
@@ -429,7 +478,17 @@ def main() -> int:
         ]
         if available_generative:
             available_set = set(available_generative)
-            filtered = [m for m in model_candidates if m in available_set]
+            filtered: List[str] = []
+            for candidate in model_candidates:
+                if candidate in available_set:
+                    if candidate not in filtered:
+                        filtered.append(candidate)
+                    continue
+
+                base = candidate[: -len("-latest")] if candidate.endswith("-latest") else candidate
+                matched = next((m for m in available_generative if m.startswith(base)), "")
+                if matched and matched not in filtered:
+                    filtered.append(matched)
             if filtered:
                 model_candidates = filtered
             else:
@@ -439,6 +498,7 @@ def main() -> int:
         print(f"WARN: unable to filter model candidates by ListModels: {exc}", file=sys.stderr)
 
     print(f"Using Gemini model: {model_candidates[0]}")
+    print(f"Gemini cascade order: {', '.join(model_candidates)}")
 
     def translate_text(text: str, locale: str) -> str:
         nonlocal model_candidates
