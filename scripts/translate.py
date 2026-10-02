@@ -41,13 +41,8 @@ REQUIRED_FRONTMATTER = {
 }
 
 DEFAULT_GEMINI_MODEL_FALLBACKS = [
-    "gemini-3.8-flash-latest",
     "gemini-3.8-flash",
-    "gemini-2.5-flash-latest",
-    "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash",
+    "gemini-3.8-flash-latest",
 ]
 
 TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
@@ -257,6 +252,8 @@ def resolve_gemini_model(api_key: str, preferred_model: str) -> str:
         return generative[0]
 
     raise RuntimeError("no Gemini models available for generateContent")
+
+
 def gemini_translate(
     api_key: str,
     models: List[str],
@@ -335,6 +332,11 @@ def gemini_translate(
                 detail = str((resp.json() or {}).get("error", {}).get("message", "")).strip()
             except Exception:
                 detail = resp.text.strip()
+
+            detail_l = detail.lower()
+            if resp.status_code == 429 and ("quota" in detail_l or "billing" in detail_l):
+                short_detail = detail[:180] if detail else "quota exceeded"
+                raise RuntimeError(f"gemini quota exceeded: {short_detail}")
 
             can_retry_with_next = resp.status_code in TRANSIENT_HTTP_STATUSES and idx < len(models) - 1
             if can_retry_with_next:
@@ -416,6 +418,7 @@ def main() -> int:
 
     model = resolve_gemini_model(api_key, preferred_model)
     model_candidates = [model] + [m for m in build_model_candidates(preferred_model) if m != model]
+    strict_translation = os.getenv("TRANSLATION_STRICT", "").strip().lower() in {"1", "true", "yes"}
 
     try:
         available_models = fetch_available_models(api_key)
@@ -427,8 +430,11 @@ def main() -> int:
         if available_generative:
             available_set = set(available_generative)
             filtered = [m for m in model_candidates if m in available_set]
-            extras = [m for m in available_generative if m not in filtered]
-            model_candidates = filtered + extras if filtered else available_generative
+            if filtered:
+                model_candidates = filtered
+            else:
+                preferred_available = [m for m in available_generative if m.startswith("gemini")]
+                model_candidates = preferred_available[:5] if preferred_available else available_generative[:5]
     except Exception as exc:
         print(f"WARN: unable to filter model candidates by ListModels: {exc}", file=sys.stderr)
 
@@ -462,13 +468,30 @@ def main() -> int:
                 translated_description = translate_text(description_en, locale)
                 translated_body = translate_text(body_en, locale)
             except Exception as exc:
+                if strict_translation:
+                    raise
                 if out_path.exists():
                     print(
                         f"WARN: translation failed for {relative(source)} ({locale}): {exc}; keeping existing {relative(out_path)}",
                         file=sys.stderr,
                     )
                     continue
-                raise
+
+                fallback_fm = dict(parts.frontmatter)
+                fallback_fm["title"] = title_en
+                fallback_fm["description"] = description_en
+                fallback_fm["source_locale"] = "en"
+                fallback_fm["locale"] = locale
+                fallback_fm["translation_status"] = "pending"
+                out_parts = DocParts(frontmatter=fallback_fm, body=body_en)
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_text(dump_markdown_doc(out_parts), encoding="utf-8")
+                localized_written.append(out_path)
+                print(
+                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; wrote fallback {relative(out_path)}",
+                    file=sys.stderr,
+                )
+                continue
 
             localized_fm = dict(parts.frontmatter)
             localized_fm["title"] = translated_title
