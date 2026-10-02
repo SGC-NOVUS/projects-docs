@@ -1,4 +1,4 @@
-# sgc-novus-docs
+# projects-docs
 
 Public documentation repository for SGC-NOVUS.
 
