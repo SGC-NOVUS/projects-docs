@@ -244,8 +244,9 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
             return True
 
     # Handle mixed-language source docs where EN SSOT may contain some Cyrillic.
-    if src_latin >= 1000 and similarity >= 0.92:
-        if out_latin >= int(src_latin * 0.85) and out_cyr <= int(src_cyr * 1.25) + 120:
+    # Keep this strict enough to avoid false positives on code-heavy translated chunks.
+    if src_latin >= 1500 and similarity >= 0.98:
+        if out_latin >= int(src_latin * 0.95) and out_cyr <= int(src_cyr * 1.10) + 40:
             return True
 
     return False
@@ -736,9 +737,9 @@ def main() -> int:
     except ValueError:
         max_docs_per_run = 0
     try:
-        body_chunk_chars = max(1000, int(os.getenv("TRANSLATION_BODY_CHUNK_CHARS", "3500")))
+        body_chunk_chars = max(800, int(os.getenv("TRANSLATION_BODY_CHUNK_CHARS", "1800")))
     except ValueError:
-        body_chunk_chars = 3500
+        body_chunk_chars = 1800
 
     if not allow_pending_fallback:
         if api_key:
@@ -842,7 +843,7 @@ def main() -> int:
             try:
                 return translate_text(chunk_text, locale, "body")
             except Exception as exc:
-                if depth >= 2 or len(chunk_text) < 1400:
+                if depth >= 3 or len(chunk_text) < 600:
                     raise
 
                 next_chars = max(1000, min(chunk_chars // 2, len(chunk_text) // 2))
@@ -908,10 +909,16 @@ def main() -> int:
                                 or is_translation_suspicious(description_en, existing_description, locale, "description")
                                 or is_translation_suspicious(body_en, existing.body, locale, "body")
                             )
-                            if is_pending or is_stale:
+                            if is_pending:
                                 out_path.unlink()
                                 print(
-                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed stale locale file {relative(out_path)}",
+                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed pending fallback locale file {relative(out_path)}",
+                                    file=sys.stderr,
+                                )
+                                continue
+                            if is_stale:
+                                print(
+                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; keeping stale locale file for retry {relative(out_path)}",
                                     file=sys.stderr,
                                 )
                                 continue
