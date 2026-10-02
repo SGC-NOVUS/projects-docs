@@ -41,13 +41,8 @@
     "content/novus-os/panel-core-manual/manual-ui-guide-terminal.en.md",
     "content/novus-os/panel-core-security/security-hardening-guide.en.md"
   ],
-  "changed_english": [
-    "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-    "content/novus-os/agent-core-general/configuration.en.md"
-  ],
-  "removed_english": [
-    "content/novus-os/installer-general/ground-truth-implementation-2026-09-28.en.md"
-  ],
+  "changed_english": [],
+  "removed_english": [],
   "skipped_non_english": [
     "SGC-NOVUS/panel-core:docs/QUICK_START.md",
     "SGC-NOVUS/panel-core:docs/README.md",
