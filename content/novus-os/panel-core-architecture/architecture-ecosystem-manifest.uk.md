@@ -11,11 +11,12 @@ description: '**Status:** normative cross-repository architecture contract **Sco
   in panel-core/docs/...'
 last_updated: '2026-10-02'
 source_locale: en
-locale: en
+locale: uk
 source_repo: SGC-NOVUS/panel-core
 source_branch: main
 source_path: docs/architecture/ECOSYSTEM_MANIFEST.md
 managed_by: sync_private_docs
+translation_status: pending
 ---
 # NOVUS-OS Ecosystem Manifest
 

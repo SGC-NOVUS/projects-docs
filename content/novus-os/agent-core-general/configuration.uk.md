@@ -11,11 +11,12 @@ description: The authoritative configuration source is internal/config/config.go
   not a supported interface.
 last_updated: '2026-10-02'
 source_locale: en
-locale: en
+locale: uk
 source_repo: SGC-NOVUS/agent-core
 source_branch: main
 source_path: docs/CONFIGURATION.md
 managed_by: sync_private_docs
+translation_status: pending
 ---
 # NOVUS Agent-Core: Configuration Reference
 
