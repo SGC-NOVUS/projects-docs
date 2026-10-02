@@ -15,6 +15,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: auto-translate-main
+  cancel-in-progress: false
+
 jobs:
   localize:
     runs-on: ubuntu-latest
@@ -64,4 +68,13 @@ jobs:
           [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
           [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
           git commit -m "chore(docs): sync source docs and auto-generate localizations"
-          git push
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push rejected, attempting rebase (attempt ${attempt})"
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "Failed to push after retries"
+          exit 1
