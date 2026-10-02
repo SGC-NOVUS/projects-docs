@@ -8,6 +8,8 @@ version: 0.1.0
 title: gRPC mTLS and Signature Boundary
 description: Security boundary for gRPC metadata signature, clock skew policy, and replay protection.
 last_updated: 2026-10-01
+source_locale: en
+locale: en
 ---
 # gRPC mTLS and Signature Boundary
 

@@ -8,6 +8,8 @@ version: 0.1.0
 title: Control-Plane and Runtime Contract
 description: Canonical contract between panel-core Control-Plane and novus-agent Data-Plane.
 last_updated: 2026-10-01
+source_locale: en
+locale: en
 ---
 # Control-Plane and Runtime Contract
 
