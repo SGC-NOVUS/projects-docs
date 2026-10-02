@@ -1,6 +1,3 @@
-content/novus-os/agent-core-general/configuration.uk.md
+content/novus-os/agent-core-general/api.uk.md
+content/novus-os/agent-core-general/api.ru.md
 content/novus-os/agent-core-general/configuration.ru.md
-content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.uk.md
-content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.ru.md
-content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.uk.md
-content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.ru.md
