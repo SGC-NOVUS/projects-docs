@@ -7,6 +7,7 @@
       "repo_key": "panel-core",
       "cluster": "novus-os",
       "include_globs": [
+        "docs/*.md",
         "docs/**/*.md"
       ],
       "exclude_globs": [
@@ -21,6 +22,7 @@
       "repo_key": "agent-core",
       "cluster": "novus-os",
       "include_globs": [
+        "docs/*.md",
         "docs/**/*.md"
       ],
       "exclude_globs": [
@@ -34,6 +36,7 @@
       "repo_key": "installer",
       "cluster": "novus-os",
       "include_globs": [
+        "docs/*.md",
         "docs/**/*.md"
       ],
       "exclude_globs": [
