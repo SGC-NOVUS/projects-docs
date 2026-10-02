@@ -1,6 +1,6 @@
 {
   "source_locale": "en",
   "target_locales": ["uk", "ru"],
-  "gemini_model": "gemini-2.5-flash",
+  "gemini_model": "gemini-3.8-flash",
   "content_glob": "content/**/*.en.md"
 }
