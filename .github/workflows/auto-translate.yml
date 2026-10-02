@@ -35,10 +35,14 @@ jobs:
           pip install -r scripts/requirements.txt
 
       - name: Sync English docs from private repositories
-        if: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN != '' }}
         env:
           DOCS_SYNC_GITHUB_TOKEN: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN }}
-        run: python scripts/sync_private_docs.py
+        run: |
+          if [[ -z "${DOCS_SYNC_GITHUB_TOKEN:-}" ]]; then
+            echo "DOCS_SYNC_GITHUB_TOKEN not set, skip source sync"
+            exit 0
+          fi
+          python scripts/sync_private_docs.py
 
       - name: Generate localizations
         env:
@@ -64,22 +68,34 @@ jobs:
           git push
 
       - name: Notify portal webhook
-        if: ${{ secrets.DOCS_SYNC_WEBHOOK_URL != '' }}
         env:
           WEBHOOK_URL: ${{ secrets.DOCS_SYNC_WEBHOOK_URL }}
           WEBHOOK_SECRET: ${{ secrets.DOCS_SYNC_WEBHOOK_SECRET }}
         run: |
+          if [[ -z "${WEBHOOK_URL:-}" ]]; then
+            echo "DOCS_SYNC_WEBHOOK_URL not set, skip webhook"
+            exit 0
+          fi
           if [[ ! -f .tmp/docs-sync-payload.json ]]; then
             echo "payload missing, skip webhook"
             exit 0
           fi
+
           payload=$(cat .tmp/docs-sync-payload.json)
           signature=""
           if [[ -n "$WEBHOOK_SECRET" ]]; then
             digest=$(printf '%s' "$payload" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | sed 's/^.* //')
             signature="sha256=$digest"
           fi
-          curl -sS -X POST "$WEBHOOK_URL" \
+
+          http_code=$(curl -sS -o /tmp/docs-webhook-response.json -w "%{http_code}" -X POST "$WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -H "X-Hub-Signature-256: $signature" \
-            --data "$payload"
+            --data "$payload")
+          echo "Webhook HTTP status: $http_code"
+          cat /tmp/docs-webhook-response.json
+
+          if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
+            echo "Webhook delivery failed"
+            exit 1
+          fi
