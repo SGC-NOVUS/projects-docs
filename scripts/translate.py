@@ -25,6 +25,7 @@ import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TMP_DIR = ROOT / ".tmp"
+CONTENT_DIR = ROOT / "content"
 LOCALES_CONFIG = ROOT / "config" / "locales.json"
 GLOSSARY_CONFIG = ROOT / "scripts" / "glossary.json"
 
@@ -143,6 +144,40 @@ def git_changed_english_docs(base_sha: str | None, head_sha: str | None, content
         seen.add(p)
         unique.append(p)
     return unique
+
+
+def list_english_docs(content_glob: str) -> List[pathlib.Path]:
+    docs = [p for p in ROOT.glob(content_glob) if p.is_file() and p.name.endswith(".en.md")]
+    docs.sort()
+    return docs
+
+
+def english_docs_missing_locales(content_glob: str, target_locales: List[str]) -> List[pathlib.Path]:
+    out: List[pathlib.Path] = []
+    for source in list_english_docs(content_glob):
+        has_missing = False
+        for locale in target_locales:
+            locale_code = str(locale).strip()
+            if not locale_code:
+                continue
+            out_path = localized_path(source, locale_code)
+            if not out_path.exists():
+                has_missing = True
+                break
+        if has_missing:
+            out.append(source)
+    return out
+
+
+def unique_paths(paths: List[pathlib.Path]) -> List[pathlib.Path]:
+    seen = set()
+    out: List[pathlib.Path] = []
+    for path in paths:
+        if path in seen:
+            continue
+        seen.add(path)
+        out.append(path)
+    return out
 
 
 def build_prompt(text: str, target_locale: str, protected_terms: List[str]) -> str:
@@ -438,6 +473,38 @@ def relative(path: pathlib.Path) -> str:
     return str(path.relative_to(ROOT)).replace("\\", "/")
 
 
+def cleanup_pending_locale_fallbacks(target_locales: List[str]) -> List[pathlib.Path]:
+    removed: List[pathlib.Path] = []
+    locale_set = {str(x).strip() for x in target_locales if str(x).strip()}
+    if not locale_set:
+        return removed
+
+    for path in CONTENT_DIR.rglob("*.md"):
+        name = path.name.lower()
+        locale_match = re.search(r"\.([a-z]{2})\.md$", name)
+        if not locale_match:
+            continue
+        locale = locale_match.group(1)
+        if locale not in locale_set:
+            continue
+
+        try:
+            parts = parse_markdown_doc(path)
+        except Exception:
+            continue
+
+        translation_status = str(parts.frontmatter.get("translation_status", "")).strip().lower()
+        source_locale = str(parts.frontmatter.get("source_locale", "")).strip().lower()
+        if translation_status != "pending" or source_locale != "en":
+            continue
+
+        path.unlink()
+        removed.append(path)
+        print(f"removed pending fallback: {relative(path)}")
+
+    return removed
+
+
 def main() -> int:
     config = load_json(LOCALES_CONFIG)
     glossary = load_json(GLOSSARY_CONFIG)
@@ -447,6 +514,11 @@ def main() -> int:
     preferred_model = str(config.get("gemini_model", "gemini-2.5-flash"))
     configured_cascade = load_configured_model_cascade(config)
     content_glob = str(config.get("content_glob", "content/**/*.en.md"))
+    allow_pending_fallback = os.getenv("TRANSLATION_ALLOW_PENDING_FALLBACK", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
     if source_locale != "en":
         raise RuntimeError("this script currently supports en source locale only")
@@ -456,8 +528,23 @@ def main() -> int:
     base_sha = os.getenv("BASE_SHA")
     head_sha = os.getenv("HEAD_SHA")
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    translate_all = os.getenv("TRANSLATE_ALL", "").strip().lower() in {"1", "true", "yes"}
+
+    if not allow_pending_fallback:
+        cleanup_pending_locale_fallbacks([str(x) for x in target_locales])
 
     changed_en = git_changed_english_docs(base_sha, head_sha, content_glob)
+    missing_locale_sources = english_docs_missing_locales(content_glob, [str(x) for x in target_locales])
+
+    if translate_all:
+        changed_en = list_english_docs(content_glob)
+        print(f"TRANSLATE_ALL enabled: processing all English docs ({len(changed_en)} file(s)).")
+    elif missing_locale_sources:
+        changed_en = unique_paths(changed_en + missing_locale_sources)
+        print(
+            f"Detected missing locale files for {len(missing_locale_sources)} English source file(s); added to translation queue."
+        )
+
     if not changed_en:
         print("No changed English docs detected.")
         return 0
@@ -531,8 +618,29 @@ def main() -> int:
                 if strict_translation:
                     raise
                 if out_path.exists():
+                    if not allow_pending_fallback:
+                        try:
+                            existing = parse_markdown_doc(out_path)
+                            is_pending = str(existing.frontmatter.get("translation_status", "")).strip().lower() == "pending"
+                            if is_pending:
+                                out_path.unlink()
+                                print(
+                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed stale pending fallback {relative(out_path)}",
+                                    file=sys.stderr,
+                                )
+                                continue
+                        except Exception:
+                            pass
+
                     print(
                         f"WARN: translation failed for {relative(source)} ({locale}): {exc}; keeping existing {relative(out_path)}",
+                        file=sys.stderr,
+                    )
+                    continue
+
+                if not allow_pending_fallback:
+                    print(
+                        f"WARN: translation failed for {relative(source)} ({locale}): {exc}; skipping new locale file to avoid English fallback content",
                         file=sys.stderr,
                     )
                     continue

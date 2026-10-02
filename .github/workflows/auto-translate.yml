@@ -2,6 +2,11 @@ name: auto-translate
 
 on:
   workflow_dispatch:
+    inputs:
+      translate_all:
+        description: "Translate all English docs (rebuild all locales)"
+        required: false
+        default: "false"
   schedule:
     - cron: "17 */6 * * *"
   push:
@@ -53,6 +58,8 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BASE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
+          TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
+          TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
         run: python scripts/translate.py
 
       - name: Commit localized files
