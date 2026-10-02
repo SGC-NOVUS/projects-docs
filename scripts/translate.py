@@ -39,11 +39,25 @@ REQUIRED_FRONTMATTER = {
     "last_updated",
 }
 
+DEFAULT_GEMINI_MODEL_FALLBACKS = [
+    "gemini-2.5-flash-latest",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+]
+
 
 @dataclass
 class DocParts:
     frontmatter: Dict[str, object]
     body: str
+
+
+@dataclass
+class GeminiModelInfo:
+    name: str
+    supported_methods: List[str]
 
 
 def run(cmd: List[str]) -> str:
@@ -148,6 +162,99 @@ def build_prompt(text: str, target_locale: str, protected_terms: List[str]) -> s
     )
 
 
+def normalize_model_name(name: str) -> str:
+    name = name.strip()
+    if name.startswith("models/"):
+        return name.split("/", 1)[1]
+    return name
+
+
+def build_model_candidates(preferred_model: str) -> List[str]:
+    env_fallbacks = [
+        normalize_model_name(x)
+        for x in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",")
+        if x.strip()
+    ]
+
+    preferred_model = normalize_model_name(preferred_model)
+    candidates = [preferred_model]
+    if preferred_model.endswith("-latest"):
+        candidates.append(preferred_model[: -len("-latest")])
+    else:
+        candidates.append(f"{preferred_model}-latest")
+
+    candidates.extend(env_fallbacks)
+    candidates.extend(DEFAULT_GEMINI_MODEL_FALLBACKS)
+
+    unique: List[str] = []
+    seen = set()
+    for model in candidates:
+        if not model or model in seen:
+            continue
+        seen.add(model)
+        unique.append(model)
+    return unique
+
+
+def fetch_available_models(api_key: str) -> List[GeminiModelInfo]:
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    resp = requests.get(url, timeout=60)
+    resp.raise_for_status()
+    data = resp.json()
+
+    out: List[GeminiModelInfo] = []
+    for item in data.get("models", []):
+        if not isinstance(item, dict):
+            continue
+        raw_name = str(item.get("name", "")).strip()
+        name = normalize_model_name(raw_name)
+        if not name:
+            continue
+        methods = [str(x) for x in item.get("supportedGenerationMethods", []) if str(x).strip()]
+        out.append(GeminiModelInfo(name=name, supported_methods=methods))
+    return out
+
+
+def resolve_gemini_model(api_key: str, preferred_model: str) -> str:
+    candidates = build_model_candidates(preferred_model)
+    try:
+        available = fetch_available_models(api_key)
+    except Exception as exc:
+        print(
+            f"WARN: unable to list Gemini models; using fallback candidate '{candidates[0]}': {exc}",
+            file=sys.stderr,
+        )
+        return candidates[0]
+
+    generative = [
+        m.name
+        for m in available
+        if "generateContent" in m.supported_methods or "streamGenerateContent" in m.supported_methods
+    ]
+    if not generative:
+        generative = [m.name for m in available]
+
+    available_set = set(generative)
+    for candidate in candidates:
+        if candidate in available_set:
+            return candidate
+
+    for candidate in candidates:
+        base = candidate[: -len("-latest")] if candidate.endswith("-latest") else candidate
+        for available_name in generative:
+            if available_name.startswith(base):
+                return available_name
+
+    for available_name in generative:
+        if "flash" in available_name:
+            return available_name
+
+    if generative:
+        return generative[0]
+
+    raise RuntimeError("no Gemini models available for generateContent")
+
+
 def gemini_translate(api_key: str, model: str, text: str, target_locale: str, protected_terms: List[str]) -> str:
     if not text.strip():
         return text
@@ -204,7 +311,7 @@ def main() -> int:
 
     source_locale = str(config.get("source_locale", "en"))
     target_locales = list(config.get("target_locales", []))
-    model = str(config.get("gemini_model", "gemini-2.5-flash"))
+    preferred_model = str(config.get("gemini_model", "gemini-2.5-flash"))
     content_glob = str(config.get("content_glob", "content/**/*.en.md"))
 
     if source_locale != "en":
@@ -223,6 +330,9 @@ def main() -> int:
 
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is required")
+
+    model = resolve_gemini_model(api_key, preferred_model)
+    print(f"Using Gemini model: {model}")
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
