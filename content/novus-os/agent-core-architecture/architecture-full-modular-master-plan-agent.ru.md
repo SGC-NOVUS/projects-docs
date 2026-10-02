@@ -5,8 +5,8 @@ category: agent-core-architecture
 order: 100
 status: active
 version: 0.1.0
-title: FULL MODULAR MASTER PLAN - AGENT CORE (CANONICAL SSoT)
-description: 'Status: COMPLETED & LOCKED (Baseline v0.2.0, 2026-09-25)'
+title: ПОЛНЫЙ МОДУЛЬНЫЙ ГЕНПЛАН — AGENT CORE (КАНОНИЧЕСКИЙ SSoT)
+description: 'Статус: COMPLETED & LOCKED (Baseline v0.2.0, 2026-09-25)'
 last_updated: '2026-10-02'
 source_locale: en
 locale: ru
@@ -14,174 +14,173 @@ source_repo: SGC-NOVUS/agent-core
 source_branch: main
 source_path: docs/architecture/FULL_MODULAR_MASTER_PLAN_AGENT.md
 managed_by: sync_private_docs
-translation_status: pending
 ---
-# FULL MODULAR MASTER PLAN - AGENT CORE (CANONICAL SSoT)
+# ПОЛНЫЙ МОДУЛЬНЫЙ МАСТЕР-ПЛАН — ЯДРО АГЕНТА (КАНОНИЧЕСКИЙ SSoT)
 
-Status: COMPLETED & LOCKED (Baseline v0.2.0, 2026-09-25)
+Статус: ЗАВЕРШЕНО И ЗАФИКСИРОВАНО (Базовая линия v0.2.0, 25.09.2026)
 
-Scope: agent-core only, with cross-repository boundary compliance to panel-core and installer.
+Область применения: только agent-core, с соблюдением границ кросс-репозиториев с panel-core и installer.
 
-Normative anchors:
+Нормативные точки привязки:
 - AGENTS.md
 - ECOSYSTEM_MANIFEST.md
 
-This file supersedes operational split planning as the authoritative master plan.
-Working artifacts in docs/dev remain supporting records, not a parallel source of truth.
+Этот файл заменяет планирование операционного разделения в качестве авторитетного мастер-плана.
+Рабочие артефакты в docs/dev остаются вспомогательными записями, а не параллельным источником истины.
 
-## 0. Mission, Scope, and Non-Negotiable Constraints
+## 0. Миссия, область применения и не подлежащие обсуждению ограничения
 
-Mission:
-- Evolve agent-core into an enterprise-grade, modular, security-first Go runtime
-  while preserving platform compatibility and transport contracts.
+Миссия:
+- Развить agent-core в модульную Go-среду выполнения корпоративного уровня с приоритетом безопасности,
+  сохраняя при этом совместимость с платформой и транспортные контракты.
 
-Non-negotiable constraints:
-- No breaking gRPC contract drift during migration.
-- Security controls remain enforced end-to-end (TLS, signed metadata, replay, rate limit, audit).
-- No business capability loss for telemetry, runtime operations, VFS, backup, PTY, WebSocket console, SSH/SFTP.
-- Deterministic phase gates with reproducible validation.
-- Installer and Panel interoperability preserved across releases.
+Ограничения, не подлежащие обсуждению:
+- Отсутствие нарушающего отклонения контракта gRPC во время миграции.
+- Средства контроля безопасности продолжают принудительно применяться сквозным образом (TLS, подписанные метаданные, защита от повторного воспроизведения, ограничение частоты запросов, аудит).
+- Отсутствие потери бизнес-возможностей для телеметрии, операционной среды выполнения, VFS, бэкапа, PTY, WebSocket-консоли, SSH/SFTP.
+- Детерминированные шлюзы фаз с воспроизводимой валидацией.
+- Совместимость installer и Panel сохраняется во всех релизах.
 
-## 0.1 Current Execution Snapshot (2026-09-25)
+## 0.1 Снимок текущего выполнения (25.09.2026)
 
-Execution status:
-- Overall completion: 100.0% (35/35 checkpoints).
-- Phase A (Contract Freeze and Reconciliation): 100% complete.
-- Phase B (Composition Root and Module Skeleton): 100% complete.
-- Phase C (Transport/Domain Separation): 100% complete.
-- Phase D (Security Hardening): 100% complete.
-- Phase E (Compatibility and Deprecation Bridge): 100% complete.
-- Phase F (Legacy Cleanup and Wrapper Removal): 100% complete.
-- Phase G (Release Readiness and Operational Proof): 100% complete.
+Статус выполнения:
+- Общее выполнение: 100.0% (35/35 контрольных точек).
+- Фаза A (Заморозка контрактов и сверка): 100% завершено.
+- Фаза B (Корень композиции и скелет модулей): 100% завершено.
+- Фаза C (Разделение транспорта и доменов): 100% завершено.
+- Фаза D (Усиление безопасности): 100% завершено.
+- Фаза E (Мост совместимости и устаревания): 100% завершено.
+- Фаза F (Очистка устаревшего кода и удаление оберток): 100% завершено.
+- Фаза G (Готовность к релизу и операционное подтверждение): 100% завершено.
 
-Baseline metrics:
-- Go package count: 14.
-- Go source file count: 55.
-- Test files: 16.
-- Current hotspots:
-  - pkg/vfs/service.go (~748 LOC)
-  - internal/grpcserver/vfs_surface.go (~742 LOC)
-  - internal/grpcserver/runtime_surface_service.go (~610 LOC)
-  - pkg/docker/service.go (~601 LOC)
-  - internal/grpcserver/instance_service.go (~596 LOC)
-  - internal/grpcserver/backup_service.go (~592 LOC)
-  - internal/grpcserver/service.go (~556 LOC)
+Базовые метрики:
+- Количество пакетов Go: 14.
+- Количество исходных файлов Go: 55.
+- Тестовые файлы: 16.
+- Текущие горячие точки:
+  - pkg/vfs/service.go (~748 строк кода)
+  - internal/grpcserver/vfs_surface.go (~742 строки кода)
+  - internal/grpcserver/runtime_surface_service.go (~610 строк кода)
+  - pkg/docker/service.go (~601 строка кода)
+  - internal/grpcserver/instance_service.go (~596 строк кода)
+  - internal/grpcserver/backup_service.go (~592 строки кода)
+  - internal/grpcserver/service.go (~556 строк кода)
 
-Validation baseline (latest run):
-- go test ./... -count=1: green
-- go vet ./...: green
-- go build ./...: green
+Базовая линия валидации (последний запуск):
+- go test ./... -count=1: зелёный
+- go vet ./...: зелёный
+- go build ./...: зелёный
 
-## 1. Authoritative Product and Contract Invariants
+## 1. Авторитетные инварианты продукта и контрактов
 
-## 1.1 API Surface and Contract Drift Resolution
+## 1.1 Поверхность API и устранение отклонений контрактов
 
-Authoritative decision:
-- BackupService and ReinstallInstance remain official platform gRPC contract surface.
+Авторитетное решение:
+- BackupService и ReinstallInstance остаются официальной поверхностью gRPC-контракта платформы.
 
-Required invariant:
-- Contract source in proto/novus.proto, generated stubs, and runtime registration are treated as an indivisible baseline.
+Обязательный инвариант:
+- Источник контракта в proto/novus.proto, сгенерированные заглушки и регистрация среды выполнения рассматриваются как неделимая базовая линия.
 
-Enforcement:
-- Contract drift guard test is mandatory in CI and local gates.
-- Any service/method addition or removal requires coordinated source contract, generated code, handlers, tests, docs, and release sequencing.
+Принудительное исполнение:
+- Тест защиты от отклонений контракта является обязательным в CI и локальных шлюзах.
+- Любое добавление или удаление сервиса/метода требует скоординированного исходного контракта, сгенерированного кода, обработчиков, тестов, документации и последовательности релизов.
 
-## 1.2 Transport Hardening Invariants (WebSocket and SSH)
+## 1.2 Инварианты усиления транспорта (WebSocket и SSH)
 
-Authoritative decision:
-- WebSocket and SSH remain enabled by default.
+Авторитетное решение:
+- WebSocket и SSH остаются включенными по умолчанию.
 
-Mandatory hardening requirements:
+Обязательные требования по усилению безопасности:
 - WebSocket:
-  - Remove wildcard CheckOrigin behavior.
-  - Enforce strict JWT claim validation bound to node, container, and session context.
+  - Удалить поведение с подстановочными знаками CheckOrigin.
+  - Обеспечить строгую валидацию утверждений (claims) JWT, привязанных к контексту узла, контейнера и сеанса.
 - SSH/SFTP:
-  - Host key must be persistent and generated once.
-  - Persist key under secure host state path (/etc/novus-agent/ or state path policy aligned with NOVUS_AGENT_STATE_FILE lifecycle).
-  - Remove hardcoded :2022 from runtime bootstrap and move to configuration.
-  - Route SFTP disk access through a unified VFS Policy Engine.
-  - Require filepath.EvalSymlinks canonicalization before all effective filesystem operations.
+  - Ключ хоста должен быть постоянным и генерироваться один раз.
+  - Сохранять ключ по безопасному пути состояния хоста (/etc/novus-agent/ или политике путей состояния, согласованной с жизненным циклом NOVUS_AGENT_STATE_FILE).
+  - Удалить захардкоженный :2022 из загрузки среды выполнения и перенести его в конфигурацию.
+  - Маршрутизировать доступ к диску SFTP через единый механизм политик VFS (VFS Policy Engine).
+  - Требовать канонизацию filepath.EvalSymlinks перед всеми фактическими операциями с файловой системой.
 
-## 1.3 VFS Architecture Invariant: Context-Aware OIM/IAM Policy Engine
+## 1.3 Инвариант архитектуры VFS: Контекстно-зависимый механизм политик OIM/IAM
 
-The VFS architecture must evolve from binary scope selection to granular policy processing.
+Архитектура VFS должна развиваться от выбора бинарной области видимости к детализированной обработке политик.
 
-Mandatory policy modes:
-- host_admin mode:
-  - Full host filesystem access for trusted node-administration workflows.
-- scoped_runtime mode:
-  - Baseline tenant/runtime isolation to /var/lib/novus/volumes/* roots.
+Обязательные режимы политик:
+- режим host_admin:
+  - Полный доступ к файловой системе хоста для доверенных рабочих процессов администрирования узла.
+- режим scoped_runtime:
+  - Базовая изоляция арендатора/среды выполнения до корней /var/lib/novus/volumes/*.
 
-Mandatory granular OIM/IAM path-level guard capabilities:
+Обязательные возможности детализированной защиты на уровне путей OIM/IAM:
 - AllowedSubpaths:
-  - Positive allowlist of concrete subtrees inside runtime volumes.
-- HiddenPaths and MaskedPaths:
-  - Deny visibility in directory listings and metadata responses for protected paths.
+  - Позитивный белый список конкретных поддеревьев внутри томов среды выполнения.
+- HiddenPaths и MaskedPaths:
+  - Запрет видимости в листингах каталогов и ответах метаданных для защищенных путей.
 - AccessFlags:
-  - Path-level operation flags: Read, Write, Delete, Chmod.
-- Symlink-Traverse Guard:
-  - Canonicalize via filepath.EvalSymlinks, then evaluate final target against policy masks and flags.
+  - Флаги операций на уровне путей: Read, Write, Delete, Chmod.
+- Защита обхода симлинков (Symlink-Traverse Guard):
+  - Канонизация через filepath.EvalSymlinks, затем оценка конечной цели на соответствие маскам и флагам политики.
 
-Boundary invariant:
-- Agent enforces technical scope and path guard execution; Panel remains IAM/OIM decision authority.
+Инвариант границ:
+- Агент обеспечивает техническую область видимости и выполнение защиты путей; Panel остается центром принятия решений IAM/OIM.
 
-## 1.4 Binary Update Pipeline Invariant (P0)
+## 1.4 Инвариант конвейера обновления бинарных файлов (P0)
 
-Mandatory behavior:
-- Full removal of script-based update execution (curl | bash prohibited).
-- Update pipeline must be binary-driven:
-  - fetch release metadata via GitHub Releases API,
-  - download Linux ELF artifact,
-  - verify required SHA-256 checksum,
-  - perform atomic binary swap via os.Rename,
-  - restart unit under controlled policy with rollback path on failed activation.
+Обязательное поведение:
+- Полное удаление выполнения обновлений на основе скриптов (запрещено curl | bash).
+- Конвейер обновлений должен управляться бинарными файлами:
+  - получение метаданных релиза через API релизов GitHub,
+  - скачивание артефакта Linux ELF,
+  - проверка требуемой контрольной суммы SHA-256,
+  - выполнение атомарной заменяемости бинарного файла через os.Rename,
+  - перезапуск юнита под контролируемой политикой с путем отката при неудачной активации.
 
-## 2. Full Audit Report (Consolidated)
+## 2. Полный отчет об аудите (консолидированный)
 
-## 2.1 Critical Findings
+## 2.1 Критические находки
 
-1) Unsafe updater execution path.
-- Evidence: internal/grpcserver/service.go (UpdateAgent path invoking shell script pipeline).
-- Risk: supply-chain/RCE exposure.
+1) Небезопасный путь выполнения обновлялки (updater).
+- Свидетельство: internal/grpcserver/service.go (путь UpdateAgent, вызывающий конвейер скрипта оболочки).
+- Риск: подверженность цепочке поставок / RCE.
 
-2) Historical contract drift risk (now reconciled in source contract and docs, guard retained).
-- Evidence context: runtime registration vs source proto divergence prior to reconciliation.
-- Risk: panel/agent incompatibility and non-reproducible protobuf generation.
+2) Риск исторического отклонения контракта (теперь согласовано в исходном контракте и документации, защита сохранена).
+- Контекст свидетельства: расхождение регистрации среды выполнения и исходного proto до согласования.
+- Риск: несовместимость панели и агента, а также невоспроизводимая генерация protobuf.
 
-3) WebSocket origin and claim hardening gap.
-- Evidence: wildcard origin acceptance and insufficient context binding.
-- Risk: cross-origin/token misuse in compatibility transport.
+3) Пробел в усилении источника и утверждений WebSocket.
+- Свидетельство: принятие источника с подстановочными знаками и недостаточная привязка контекста.
+- Риск: межсайтовое использование / злоупотребление токенами в транспортном слое совместимости.
 
-## 2.2 High Findings
+## 2.2 Высокие находки
 
-1) SFTP path enforcement bypasses unified VFS policy path.
-- Evidence: direct os.* operations in SFTP adapter path.
-- Risk: inconsistent containment behavior and symlink traversal exposure.
+1) Обеспечение принудительного применения путей SFTP обходит единый путь политики VFS.
+- Свидетельство: прямые операции os.* в пути адаптера SFTP.
+- Риск: несогласованное поведение изоляции и уязвимость к обходу символических ссылок.
 
-2) Runtime VFS scope defaults to host-wide root.
-- Evidence: bootstrap AllowedRoots set to /.
-- Risk: scoped tenant isolation not yet enforced by default runtime policy mode.
+2) Область видимости VFS среды выполнения по умолчанию имеет корень уровня всего хоста.
+- Свидетельство:AllowedRoots загрузки установлены в /.
+- Риск: изоляция ограниченного арендатора еще не применяется по умолчанию в режиме политики среды выполнения.
 
-3) SSH host identity lifecycle and configurability debt.
-- Evidence: non-persistent host key lifecycle and hardcoded SSH port in bootstrap path.
-- Risk: identity instability and reduced operational governance.
+3) Долг по жизненному циклу идентификатора хоста SSH и настраиваемости.
+- Свидетельство: непостоянный жизненный цикл ключа хоста и захардкоженный порт SSH в пути загрузки.
+- Риск: нестабильность идентификатора и снижение операционного управления.
 
-## 2.3 Medium Findings
+## 2.3 Средние находки
 
-1) Dead or weakly integrated paths.
-- Command handler and scheduler orchestration integration require explicit ownership and lifecycle cleanup.
+1) Мертвые или слабо интегрированные пути.
+- Интеграция диспетчера команд и оркестровки планировщика требует явного владения и очистки жизненного цикла.
 
-2) Documentation drift (partially remediated).
-- Config keys and behavior claims must continuously track runtime reality.
+2) Отклонение документации (частично исправлено).
+- Ключи конфигурации и заявления о поведении должны непрерывно отслеживать реальность среды выполнения.
 
-3) Coverage density mismatch for high-risk surfaces.
-- Transport and security-heavy paths require deeper focused tests.
+3) Несоответствие плотности покрытия для поверхностей высокого риска.
+- Транспортные пути и пути с высоким уровнем безопасности требуют более глубоких целевых тестов.
 
-## 3. Target Modular Architecture
+## 3. Целевая модульная архитектура
 
-## 3.1 Domain Model
+## 3.1 Доменная модель
 
-Target domains:
+Целевые домены:
 - BootstrapCLI
 - ConfigRuntime
 - StateVault
@@ -197,277 +196,277 @@ Target domains:
 - SchedulerJobs
 - Observability
 
-## 3.2 Module Layout Standard
+## 3.2 Стандарт компоновки модулей
 
-For each domain D:
+Для каждого домена D:
 - internal/modules/D/application
 - internal/modules/D/domain
 - internal/modules/D/infrastructure
 - internal/modules/D/transport
 - internal/modules/D/providers
 
-Platform layer:
+Уровень платформы:
 - internal/platform/bootstrap
 - internal/platform/config
 - internal/platform/observability
 - internal/platform/contracts
 
-Boundary rules:
-- No cross-domain imports into another domain infrastructure package.
-- Domain collaboration only via explicit ports/interfaces.
-- Transport adapters remain thin; orchestration belongs to application layer.
+Правила границ:
+- Запрет кросс-доменных импортов в другой инфраструктурный пакет домена.
+- Доменное сотрудничество только через явные порты/интерфейсы.
+- Транспортные адаптеры остаются тонкими; оркестровка принадлежит прикладному слою.
 
-## 4. Documentation Governance Standard (Strict)
+## 4. Стандарт управления документацией (Строгий)
 
-Documentation must evolve in lockstep with architecture and implementation.
+Документация должна развиваться синхронно с архитектурой и реализацией.
 
-Mandatory documentation contours:
+Обязательные контуры документации:
 
-1) Developer contour (docs/development/):
-- module internals, extension of gRPC surfaces, type contracts,
-  panel-agent protocol behavior, test standards, fitness controls.
+1) Контур разработчика (docs/development/):
+- внутренние элементы модуля, расширение поверхностей gRPC, контракты типов,
+  поведение протокола панель-агент, стандарты тестирования, средства контроля пригодности.
 
-2) Operator and system administrator contour (docs/ public operator set):
-- environment configuration, exposed ports, systemd settings,
-  SSH/TLS persistence model, security posture, network isolation, diagnostics.
+2) Контур оператора и системного администратора (публичный набор оператора в docs/):
+- конфигурация среды, открытые порты, настройки systemd,
+- модель персистентности SSH/TLS, уровень безопасности, сетевая изоляция, диагностика.
 
-3) User/reference contour (docs/ public reference set):
-- environment variable references, VFS limits/capabilities,
-  SFTP and web console functional references.
+3) Контур пользователя / справочный (публичный справочный набор в docs/):
+- ссылки на переменные среды, лимиты / возможности VFS,
+- функциональные справочники SFTP и веб-консоли.
 
-4) Internal engineering contour (docs/dev/):
-- private audits, debt ledgers, execution trackers, migration notes.
+4) Внутренний инженерный контур (docs/dev/):
+- частные аудиты, реестры долгов, трекеры выполнения, примечания по миграции.
 
-Security sanitization requirement:
-- Public docs must remain deeply functional but enforce zero disclosure of exploit chains,
-  private host secret paths, bypass guidance, or offensive operational details.
+Требование очистки безопасности:
+- Публичная документация должна оставаться глубоко функциональной, но обеспечивать нулевое раскрытие цепочек эксплойтов,
+- путей секретов приватных хостов, руководств по обходу или наступательных оперативных деталей.
 
-## 5. Sequential Phase Plan (A -> G)
+## 5. План последовательных фаз (A -> G)
 
-## Phase A. Contract Freeze and Reconciliation (Completed)
+## Фаза A. Заморозка контрактов и сверка (Завершено)
 
-Delivered outcomes:
-- Source contract reconciliation for BackupService and ReinstallInstance.
-- API reference alignment.
-- Contract drift guard introduced.
-- Gate checks green.
+Доставленные результаты:
+- Сверка исходного контракта для BackupService и ReinstallInstance.
+- Выравнивание справочника API.
+- Внедрена защита от отклонения контракта.
+- Проверки шлюзов зеленые.
 
-## Phase B. Composition Root and Module Skeleton (Completed)
+## Фаза B. Корень композиции и скелет модулей (Завершено)
 
-Delivered outcomes:
-- internal/platform/bootstrap introduced.
-- internal/modules skeleton introduced.
-- remaining daemon startup wiring extracted from internal/grpcserver/server.go
-  into internal/platform/bootstrap while preserving listener and lifecycle parity.
-- startup parity smoke and full gates green.
-- Phase B sign-off complete.
+Доставленные результаты:
+- Представлен пакет internal/platform/bootstrap.
+- Представлен скелет internal/modules.
+- Остальная логика запуска демона извлечена из internal/grpcserver/server.go
+  в internal/platform/bootstrap с сохранением паритета слушателей и жизненного цикла.
+- Дымовой тест паритета запуска и полные шлюзы зеленые.
+- Подписание Фазы B завершено.
 
-Gate B:
-- all Gate A checks
-- startup smoke parity for gRPC, WS, SSH listeners
-- no behavior drift in grpc_smoke_test
+Шлюз B:
+- все проверки Шлюза A
+- паритет дымового запуска для слушателей gRPC, WS, SSH
+- отсутствие отклонения поведения в grpc_smoke_test
 
-## Phase C. Transport/Domain Separation
+## Фаза C. Разделение транспорта и доменов
 
-- C1 delivered:
-  - NovusAgent application service introduced under internal/modules/novusagent/application.
-  - gRPC transport delegates telemetry, docker manager, pairing, unclaim, and rotate-secret orchestration to module service.
-  - Focused module unit tests added for extracted orchestration paths.
-- C2 delivered:
-  - RuntimeSurface application service introduced under internal/modules/runtime_surface/application.
-  - RuntimeSurface HostInfo, RuntimeContainers, RuntimeContainerInspect, RuntimeContainerStats, RuntimeContainerRemove, and RuntimeContainerCreate orchestration moved out of grpc transport into module application service.
-  - gRPC RuntimeSurface transport now acts as decode/encode/status envelope for these paths.
-  - Focused module unit tests added for extracted RuntimeSurface orchestration paths.
-- C3 delivered:
-  - InstanceLifecycle application service introduced under internal/modules/instance_lifecycle/application.
-  - CheckPorts, AllocatePorts, CreateInstance, and ReinstallInstance orchestration moved out of grpc transport into module application service.
-  - gRPC InstanceService transport now delegates these paths while preserving response/status contracts and streaming envelopes.
-  - Focused module unit tests expanded for extracted InstanceLifecycle orchestration paths.
-  - BackupOrchestration application service introduced under internal/modules/backup_orchestration/application.
-  - CreateBackup, RestoreBackup, DeleteBackup, and ListBackups orchestration moved out of grpc transport into module application service.
-  - gRPC BackupService transport now delegates these paths while preserving stream envelopes and status mappings.
-  - Focused module unit tests added for extracted BackupOrchestration paths.
-- C4 delivered:
-  - WebSocket console orchestration moved into `internal/modules/transport_websocket_console/application/service.go`.
-  - gRPC compatibility transport `internal/grpcserver/websocket_console.go` now acts as HTTP/WebSocket adapter and delegates auth/buffer/spam/control mapping to module application service.
-  - Focused module unit tests added for websocket auth, ring buffer, spam throttling, and client control mapping.
-- C5 delivered:
-  - Phase C sign-off completed after green full quality gates (`go test ./...`, `go vet ./...`, `go build ./...`).
-- Split NovusAgent, RuntimeSurface, InstanceLifecycle, BackupOrchestration into module services.
-- Keep transport handlers as decode/encode/validation envelopes.
-- Split websocket console into transport adapter plus application service.
+- C1 доставлено:
+  - Прикладной сервис NovusAgent добавлен в internal/modules/novusagent/application.
+  - gRPC-транспорт делегирует телеметрию, диспетчер docker, сопряжение, отмену сопряжения (unclaim) и оркестровку ротации секрета в сервисы модуля.
+  - Добавлены сфокусированные юнит-тесты модулей для извлеченных путей оркестровки.
+- C2 доставлено:
+  - Прикладной сервис RuntimeSurface добавлен в internal/modules/runtime_surface/application.
+  - Оркестровка RuntimeSurface HostInfo, RuntimeContainers, RuntimeContainerInspect, RuntimeContainerStats, RuntimeContainerRemove и RuntimeContainerCreate перенесена из транспорта grpc в прикладной сервис модуля.
+  - Транспорт gRPC RuntimeSurface теперь выступает в роли конверта декодирования/кодирования/статуса для этих путей.
+  - Добавлены сфокусированные юнит-тесты модулей для извлеченных путей оркестровки RuntimeSurface.
+- C3 доставлено:
+  - Прикладной сервис InstanceLifecycle добавлен в internal/modules/instance_lifecycle/application.
+  - Оркестровка CheckPorts, AllocatePorts, CreateInstance и ReinstallInstance перенесена из транспорта grpc в прикладной сервис модуля.
+  - Транспорт gRPC InstanceService теперь делегирует эти пути, сохраняя контракты ответа/статуса и конверты потоковой передачи.
+  - Расширены сфокусированные юнит-тесты модулей для извлеченных путей оркестровки InstanceLifecycle.
+  - Прикладной сервис BackupOrchestration добавлен в internal/modules/backup_orchestration/application.
+  - Оркестровка CreateBackup, RestoreBackup, DeleteBackup и ListBackups перенесена из транспорта grpc в прикладной сервис модуля.
+  - Транспорт gRPC BackupService теперь делегирует эти пути, сохраняя конверты потоков и маппинги статусов.
+  - Добавлены сфокусированные юнит-тесты модулей для извлеченных путей BackupOrchestration.
+- C4 доставлено:
+  - Оркестровка консоли WebSocket перенесена в `internal/modules/transport_websocket_console/application/service.go`.
+  - Транспорт совместимости gRPC `internal/grpcserver/websocket_console.go` теперь выступает в качестве HTTP/WebSocket-адаптера и делегирует маппинг аутентификации/буфера/спама/управления в прикладной сервис модуля.
+  - Добавлены сфокусированные юнит-тесты модулей для аутентификации websocket, циклического буфера, троттлинг-ограничения спама и маппинга управления клиентами.
+- C5 доставлено:
+  - Подписание Фазы C завершено после зеленых полных шлюзов качества (`go test ./...`, `go vet ./...`, `go build ./...`).
+- Разделение NovusAgent, RuntimeSurface, InstanceLifecycle, BackupOrchestration на сервисы модулей.
+- Сохранение транспортных обработчиков в качестве конвертов декодирования/кодирования/валидации.
+- Разделение консоли websocket на транспортный адаптер и прикладной сервис.
 
-## Phase D. Security Hardening Implementation
+## Фаза D. Реализация усиления безопасности
 
-- D1 delivered:
-  - Script-based updater path removed from `internal/grpcserver/service.go`.
-  - Binary update manager module introduced in `internal/modules/update_manager/application/service.go`.
-  - `UpdateAgent` now delegates asynchronous binary update flow to module application service.
-  - Focused unit tests added for update manager binary download and activation flow.
-- D2 delivered:
-  - Mandatory SHA-256 verification introduced for updater artifacts via `checksums.txt` release metadata.
-  - Binary activation now proceeds only after expected checksum and downloaded checksum match.
-  - Focused unit tests added for checksum download failure, missing checksum entry, and checksum mismatch paths.
-- D3 delivered:
-  - Explicit rollback strategy implemented for updater activation and restart failure paths.
-  - Failed restart now triggers binary rollback to the previous executable and a restart attempt with restored binary.
-  - Focused unit tests added for restart-failure rollback behavior.
-- D4 delivered:
-  - SSH host key lifecycle now persists key material to a secure host path aligned with state-file policy.
-  - Runtime bootstrap removed hardcoded SSH listener and now uses configuration-driven listener address.
-  - Focused unit tests added for host key create/reuse/permissions and corrupted-key rejection behavior.
-- D5 delivered:
-  - FilesVFS policy resolver introduced with explicit `host_admin` and `scoped_runtime` modes.
-  - Bootstrap and legacy runtime wiring now resolve VFS allowlist roots from policy mode instead of hardcoded host-wide root.
-  - Focused unit tests added for policy-mode resolution, scoped-root validation, and config defaults/overrides.
-- D6 delivered:
-  - WebSocket transport removed wildcard origin behavior and now enforces explicit origin allowlist policy.
-  - JWT authentication now validates contextual claims for node, container, and session binding.
-  - Focused unit tests added for origin policy checks and strict claim-validation paths.
-- D7 delivered:
-  - Phase D sign-off completed with fresh hardening gate evidence.
-  - Full validation rerun successful: `go test ./... -count=1`, `go vet ./...`, `go build ./...`.
-  - Security-hardening sequence D1-D6 confirmed complete without regressions.
-- Implement binary updater manager with mandatory SHA-256 and atomic swap/rollback.
-- Implement persistent SSH host key lifecycle and configurable SSH listener address.
-- Implement FilesVFS policy resolver with host_admin and scoped_runtime modes.
-- Implement granular OIM/IAM path ACL guard:
+- D1 доставлено:
+  - Путь скриптового updater удален из `internal/grpcserver/service.go`.
+  - Модуль менеджера бинарных обновлений добавлен в `internal/modules/update_manager/application/service.go`.
+  - `UpdateAgent` теперь делегирует асинхронный процесс обновления бинарных файлов прикладному сервису модуля.
+  - Добавлены сфокусированные юнит-тесты для скачивания бинарных файлов менеджера обновлений и процесса активации.
+- D2 доставлено:
+  - Обязательная проверка SHA-256 внедрена для артефактов updater через метаданные релиза `checksums.txt`.
+  - Активация бинарного файла теперь происходит только после совпадения ожидаемой и скачанной контрольных сумм.
+  - Добавлены сфокусированные юнит-тесты для путей ошибки скачивания контрольной суммы, отсутствия записи контрольной суммы и несовпадения контрольной суммы.
+- D3 доставлено:
+  - Реализована явная стратегия отката для путей активации updater и ошибки перезапуска.
+  - Неудачный перезапуск теперь инициирует откат бинарного файла к предыдущему исполняемому файлу и попытку перезапуска с восстановленным бинарником.
+  - Добавлены сфокусированные юнит-тесты для поведения отката при сбое перезапуска.
+- D4 доставлено:
+  - Жизненный цикл ключа хоста SSH теперь сохраняет материал ключа в безопасный путь хоста, согласованный с политикой файла состояния.
+  - Загрузка среды выполнения удалила захардкоженный слушатель SSH и теперь использует адрес слушателя на основе конфигурации.
+  - Добавлены сфокусированные юнит-тесты для поведения создания/повторного использования/прав доступа ключа хоста и отклонения поврежденного ключа.
+- D5 доставлено:
+  - Добавлен резолвер политик FilesVFS с явными режимами `host_admin` и `scoped_runtime`.
+  - Загрузка и подключение старых сред выполнения теперь разрешают корни белого списка VFS из режима политики вместо захардкоженного корня уровня всего хоста.
+  - Добавлены сфокусированные юнит-тесты для разрешения режима политики, валидации области видимости корня и дефолтов/переопределений конфигурации.
+- D6 доставлено:
+  - Транспорт WebSocket удалил поведение источника с подстановочными знаками и теперь принудительно применяет явную политику белого списка источников.
+  - Аутентификация JWT теперь проверяет контекстные утверждения (claims) для привязки узла, контейнера и сеанса.
+  - Добавлены сфокусированные юнит-тесты для проверок политики источников и путей строгой валидации утверждений.
+- D7 доставлено:
+  - Подписание Фазы D завершено со свежими данными шлюза усиления безопасности.
+  - Успешный повторный запуск полной валидации: `go test ./... -count=1`, `go vet ./...`, `go build ./...`.
+  - Последовательность усиления безопасности D1-D6 подтверждена как завершенная без регрессий.
+- Реализация менеджера бинарных обновлений с обязательным SHA-256 и атомарной заменой/откатом.
+- Реализация персистентного жизненного цикла ключа хоста SSH и настраиваемого адреса слушателя SSH.
+- Реализация резолвера политик FilesVFS с режимами host_admin и scoped_runtime.
+- Реализация детализированной защиты путей ACL OIM/IAM:
   - AllowedSubpaths
-  - HiddenPaths and MaskedPaths
+  - HiddenPaths и MaskedPaths
   - AccessFlags
-  - Symlink canonicalization and policy enforcement before operation dispatch.
-- Harden WebSocket origin and JWT context binding.
+  - Канонизация симлинков и применение политики перед отправкой операций.
+- Усиление защиты источника WebSocket и контекстной привязки JWT.
 
-## Phase E. Compatibility and Deprecation Bridge
+## Фаза E. Мост совместимости и устаревания
 
-- E1 delivered:
-  - Configuration compatibility aliases implemented for documented runtime-drift keys.
-  - Legacy `NOVUS_AGENT_STATE_PATH` now maps to canonical `NOVUS_AGENT_STATE_FILE` when canonical key is not set.
-  - Legacy `NOVUS_AGENT_VFS_ALLOWED_ROOTS` now maps to scoped roots and preserves scoped-runtime behavior when explicit mode is absent.
-- E2 delivered:
-  - Runtime deprecation warnings added for legacy alias usage (`NOVUS_AGENT_STATE_PATH`, `NOVUS_AGENT_VFS_ALLOWED_ROOTS`).
-  - Canonical key precedence preserved while emitting startup warnings when alias values are the active source.
-- E3 delivered:
-  - Operator docs aligned to canonical config keys with explicit legacy-alias migration guidance.
-  - Configuration reference now documents canonical precedence and startup warning semantics for deprecated aliases.
-- E4 delivered:
-  - Phase E sign-off completed after fresh full quality gate rerun.
-  - Validation evidence: `go test ./... -count=1`, `go vet ./...`, `go build ./...` all green.
-- Preserve legacy config aliases where needed.
-- Introduce deprecation warnings and canonical key migration path.
-- Align docs and runtime key references.
+- E1 доставлено:
+  - Реализованы псевдонимы совместимости конфигурации для задокументированных ключей отклонения среды выполнения.
+  - Устаревший `NOVUS_AGENT_STATE_PATH` теперь отображается в канонический `NOVUS_AGENT_STATE_FILE`, если канонический ключ не задан.
+  - Устаревший `NOVUS_AGENT_VFS_ALLOWED_ROOTS` теперь отображается в ограниченные корни и сохраняет поведение scoped-runtime, когда явный режим отсутствует.
+- E2 доставлено:
+  - Добавлены предупреждения об устаревании среды выполнения для использования устаревших псевдонимов (`NOVUS_AGENT_STATE_PATH`, `NOVUS_AGENT_VFS_ALLOWED_ROOTS`).
+  - Приоритет канонического ключа сохраняется при выдаче предупреждений при запуске, когда значения псевдонимов являются активным источником.
+- E3 доставлено:
+  - Документация оператора приведена в соответствие с каноническими ключами конфигурации с явным руководством по миграции устаревших псевдонимов.
+  - Справочник конфигурации теперь документирует канонический приоритет и семантику предупреждений при запуске для устаревших псевдонимов.
+- E4 доставлено:
+  - Подписание Фазы E завершено после свежего повторного запуска полного шлюза качества.
+  - Данные валидации: `go test ./... -count=1`, `go vet ./...`, `go build ./...` — все зеленее зеленого.
+- Сохранение устаревших псевдонимов конфигурации там, где это необходимо.
+- Внедрение предупреждений об устаревании и пути миграции канонических ключей.
+- Выравнивание документации и ссылок на ключи среды выполнения.
 
-## Phase F. Legacy Cleanup and Wrapper Removal
+## Фаза F. Очистка устаревшего кода и удаление оберток
 
-- F1 delivered:
-  - Transitional startup wrapper `grpcserver.Run` removed from `internal/grpcserver/server.go`.
-  - gRPC smoke test switched to canonical daemon lifecycle (`NewDaemon` + scheduler + compatibility transport startup + `Serve`) without wrapper path.
-  - Fresh full quality gates rerun after wrapper removal remained green.
-- F2 delivered:
-  - Dead adapter `internal/grpcserver/command_handler.go` removed after confirming zero runtime/test call-sites.
-  - Full quality gate rerun after dead-code removal remained green.
-- F3 delivered:
-  - Transport adapters further thinned by removing stale legacy helper/state code from `internal/grpcserver/backup_service.go` and `internal/grpcserver/instance_service.go`.
-  - Daemon wiring updated to use reduced constructor signatures in `internal/grpcserver/daemon_runtime.go`.
-- F4 delivered:
-  - Phase F sign-off completed after fresh full quality gate rerun.
-  - Validation evidence: `go test ./... -count=1`, `go vet ./...`, `go build ./...` all green.
-- Remove transitional wrappers once module ownership is complete.
-- Remove dead adapters and enforce module-boundary rules.
+- F1 доставлено:
+  - Переходная обертка запуска `grpcserver.Run` удалена из `internal/grpcserver/server.go`.
+  - gRPC дымовой тест переключен на канонический жизненный цикл демона (`NewDaemon` + scheduler + запуск транспорта совместимости + `Serve`) без пути обертки.
+  - Свежий перезапуск полных шлюзов качества после удаления обертки остался зеленым.
+- F2 доставлено:
+  - Мертвый адаптер `internal/grpcserver/command_handler.go` удален после подтверждения нулевых мест вызова в среде выполнения / тестах.
+  - Повторный запуск полного шлюза качества после удаления мертвого кода остался зеленым.
+- F3 доставлено:
+  - Транспортные адаптеры дополнительно утончены путем удаления устаревшего кода хелперов/состояния из `internal/grpcserver/backup_service.go` и `internal/grpcserver/instance_service.go`.
+  - Подключение демона обновлено для использования сокращенных сигнатур конструкторов в `internal/grpcserver/daemon_runtime.go`.
+- F4 доставлено:
+  - Подписание Фазы F завершено после свежего повторного запуска полного шлюза качества.
+  - Данные валидации: `go test ./... -count=1`, `go vet ./...`, `go build ./...` — всё зелёное.
+- Удаление переходных оберток после завершения владения модулем.
+- Удаление мертвых адаптеров и обеспечение соблюдения правил границ модулей.
 
-## Phase G. Release Readiness and Operational Proof
+## Фаза G. Готовность к релизу и операционное подтверждение
 
-- G1 delivered:
-  - Production-like updater proof executed via focused module tests:
+- G1 доставлено:
+  - Подтверждение обновления, похожее на продакшн, выполнено с помощью сфокусированных модульных тестов:
     - `TestUpdateSwapsExecutableWithDownloadedBinary`
     - `TestUpdateRollsBackOnRestartFailure`
-  - Evidence confirms download+checksum+activation path and rollback behavior on restart failure.
-- G2 delivered:
-  - Transport resilience and compatibility sequencing validated via fresh test run:
+  - Доказательства подтверждают путь скачивания + контрольной суммы + активации и поведение отката при сбое перезапуска.
+- G2 доставлено:
+  - Устойчивость транспорта и последовательность совместимости проверены посредством свежего запуска тестов:
     - `go test ./internal/grpcserver ./internal/sshserver -count=1 -v`
-  - Evidence includes contract drift guard, gRPC smoke flow, WebSocket origin/context checks, and SSH host-key lifecycle coverage.
-- G3 delivered:
-  - Final release sign-off completed after fresh full quality gate rerun.
-  - Validation evidence: `go test ./... -count=1`, `go vet ./...`, `go build ./...` all green.
-- Execute production-like update/restart/rollback proof.
-- Validate transport resilience and compatibility sequencing.
-- Sign off release checklist.
+  - Данные включают защиту от отклонения контракта, поток дымового теста gRPC, проверки источника/контекста WebSocket и покрытие жизненного цикла ключа хоста SSH.
+- G3 доставлено:
+  - Окончательное подписание релиза завершено после свежего повторного запуска полного шлюза качества.
+  - Данные валидации: `go test ./... -count=1`, `go vet ./...`, `go build ./...` — всё зелёное.
+- Выполнение доказательства обновления/перезапуска/отката, похожего на продакшн.
+- Проверка устойчивости транспорта и последовательности совместимости.
+- Подписание чек-листа релиза.
 
-## 6. Progress Model and Tracking
+## 6. Модель прогресса и отслеживание
 
-Progress formula:
+Формула прогресса:
 - completion_percent = (completed_checkpoints / total_checkpoints) * 100
 
-Current:
-- Total checkpoints: 35
-- Completed checkpoints: 35
-- Completion: 100.0%
+Текущее состояние:
+- Всего контрольных точек: 35
+- Завершено контрольных точек: 35
+- Выполнение: 100.0%
 
-Checkpoint ledger:
+Реестр контрольных точек:
 
-Phase A checkpoints (7):
-- [x] A1 inventory and baseline report captured
-- [x] A2 source proto reconciled with runtime/generated backup and reinstall surface
-- [x] A3 API docs updated for contract surface
-- [x] A4 gate checks passed
-- [x] A5 contract drift guard introduced
-- [x] A6 architecture/docs parity delta reduced
-- [x] A7 Phase A sign-off
+Контрольные точки Фазы A (7):
+- [x] A1 отчет об инвентаризации и базовой линии зафиксирован
+- [x] A2 исходный proto сверен с поверхностью среды выполнения / сгенерированного бэкапа и переустановки
+- [x] A3 документация API обновлена для поверхности контракта
+- [x] A4 проверки шлюзов пройдены
+- [x] A5 внедрена защита от отклонения контракта
+- [x] A6 дельта паритета архитектуры/документации уменьшена
+- [x] A7 подписание Фазы A
 
-Phase B checkpoints (5):
-- [x] B1 bootstrap package introduced
-- [x] B2 module skeleton introduced
-- [x] B3 remaining server wiring extraction completed
-- [x] B4 startup parity verified
-- [x] B5 Phase B sign-off
+Контрольные точки Фазы B (5):
+- [x] B1 добавлен пакет bootstrap
+- [x] B2 добавлен скелет модулей
+- [x] B3 завершено извлечение оставшейся проводки сервера
+- [x] B4 паритет запуска проверен
+- [x] B5 подписание Фазы B
 
-Phase C checkpoints (5):
-- [x] C1 NovusAgent split
-- [x] C2 RuntimeSurface split
-- [x] C3 Instance and Backup split
-- [x] C4 WebSocket adapter split
-- [x] C5 Phase C sign-off
+Контрольные точки Фазы C (5):
+- [x] C1 разделение NovusAgent
+- [x] C2 разделение RuntimeSurface
+- [x] C3 разделение Instance и Backup
+- [x] C4 разделение адаптера WebSocket
+- [x] C5 подписание Фазы C
 
-Phase D checkpoints (7):
-- [x] D1 script updater path removed
-- [x] D2 SHA-256 mandatory
-- [x] D3 atomic swap and rollback strategy
-- [x] D4 SSH host key persistence
-- [x] D5 VFS policy modes implemented
-- [x] D6 WebSocket hardening completed
-- [x] D7 Phase D sign-off
+Контрольные точки Фазы D (7):
+- [x] D1 путь скриптового updater удален
+- [x] D2 SHA-256 обязателен
+- [x] D3 атомарная замена и стратегия отката
+- [x] D4 персистентность ключа хоста SSH
+- [x] D5 реализованы режимы политики VFS
+- [x] D6 усиление защиты WebSocket завершено
+- [x] D7 подписание Фазы D
 
-Phase E checkpoints (4):
-- [x] E1 config compatibility aliases
-- [x] E2 deprecation warnings
-- [x] E3 docs aligned with canonical keys
-- [x] E4 Phase E sign-off
+Контрольные точки Фазы E (4):
+- [x] E1 псевдонимы совместимости конфигурации
+- [x] E2 предупреждения об устаревании
+- [x] E3 документация приведена в соответствие с каноническими ключами
+- [x] E4 подписание Фазы E
 
-Phase F checkpoints (4):
-- [x] F1 wrapper removal
-- [x] F2 dead code removal
-- [x] F3 module boundary enforcement
-- [x] F4 Phase F sign-off
+Контрольные точки Фазы F (4):
+- [x] F1 удаление обертки
+- [x] F2 удаление мертвого кода
+- [x] F3 обеспечение соблюдения границ модулей
+- [x] F4 подписание Фазы F
 
-Phase G checkpoints (3):
-- [x] G1 update and rollback proof
-- [x] G2 transport resilience proof
-- [x] G3 final release sign-off
+Контрольные точки Фазы G (3):
+- [x] G1 доказательство обновления и отката
+- [x] G2 доказательство устойчивости транспорта
+- [x] G3 окончательное подписание релиза
 
-## 7. Continuous Evolution: The Anti-Monolithic Modular Invariant
+## 7. Непрерывная эволюция: Антимонолитный модульный инвариант
 Все последующие доработки ядра агента подчиняются правилу нулевой монолитной экспансии (Zero-Monolith Policy):   
 1) Запрет на расширение общих и корневых слоев: Запрещено добавлять бизнес-логику в internal/grpcserver, main.go, общие хелперы или платформенные пакеты internal/platform/*.   
 2) Маршрутизация функционала (Domain Routing):
-  -Существующий домен: Если задача относится к существующей функциональности (InstanceLifecycle, RuntimeSurface, FilesVFS, UpdateManager и т.д.), реализация ведётся исключительно внутри соответствующего модуля (internal/modules/<Domain>/...).
-  -Новый домен: Если задача представляет новый независимый контекст (например, HypervisorKVM, MetricsEngine, TelemetryUDP), она оформляется строго как новый автономный модуль по каноническому стандарту (application, domain, infrastructure, transport).   
+  - Существующий домен: Если задача относится к существующей функциональности (InstanceLifecycle, RuntimeSurface, FilesVFS, UpdateManager и т.д.), реализация ведётся исключительно внутри соответствующего модуля (internal/modules/<Domain>/...).
+  - Новый домен: Если задача представляет новый независимый контекст (например, HypervisorKVM, MetricsEngine, TelemetryUDP), она оформляется строго как новый автономный модуль по каноническому стандарту (application, domain, infrastructure, transport).   
 3) Слабая связанность (Loose Coupling): Межмодульное взаимодействие разрешено только через публичные интерфейсы портов, шину событий или типизированные контракты без циклических и инфраструктурных импортов.  
 
-## 8. Completion Definition
+## 8. Определение завершенности
 
-Program completion requires all checkpoints closed and all below true:
-- runtime services decomposed to planned module boundaries,
-- no critical unresolved gap in updater, VFS policy engine, or SSH host identity,
-- gRPC/API compatibility preserved for Panel and Installer integrations,
-- legacy orchestration reduced to thin transport shims,
-- documentation synchronized to runtime behavior for all required audiences,
-- all quality and release readiness gates green.
+Для завершения программы требуется закрыть все контрольные точки и выполнить все следующие условия:
+- сервисы среды выполнения декомпозированы до запланированных границ модулей,
+- нет критических нерешенных проблем в updater, механизме политик VFS или идентификаторе хоста SSH,
+- совместимость gRPC/API сохранена для интеграций Panel и Installer,
+- старая оркестровка сводится к тонким транспортным прокладкам,
+- документация синхронизирована с поведением среды выполнения для всех требуемых аудиторий,
+- все шлюзы качества и готовности к релизу зеленые.
