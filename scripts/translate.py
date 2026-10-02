@@ -177,11 +177,10 @@ def build_model_candidates(preferred_model: str) -> List[str]:
     ]
 
     preferred_model = normalize_model_name(preferred_model)
-    candidates = [preferred_model]
     if preferred_model.endswith("-latest"):
-        candidates.append(preferred_model[: -len("-latest")])
+        candidates = [preferred_model, preferred_model[: -len("-latest")]]
     else:
-        candidates.append(f"{preferred_model}-latest")
+        candidates = [f"{preferred_model}-latest", preferred_model]
 
     candidates.extend(env_fallbacks)
     candidates.extend(DEFAULT_GEMINI_MODEL_FALLBACKS)
@@ -253,13 +252,19 @@ def resolve_gemini_model(api_key: str, preferred_model: str) -> str:
         return generative[0]
 
     raise RuntimeError("no Gemini models available for generateContent")
+def gemini_translate(
+    api_key: str,
+    models: List[str],
+    text: str,
+    target_locale: str,
+    protected_terms: List[str],
+) -> Tuple[str, str]:
+    if not models:
+        raise RuntimeError("no Gemini models configured")
 
-
-def gemini_translate(api_key: str, model: str, text: str, target_locale: str, protected_terms: List[str]) -> str:
     if not text.strip():
-        return text
+        return text, models[0]
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     payload = {
         "contents": [
             {
@@ -277,24 +282,50 @@ def gemini_translate(api_key: str, model: str, text: str, target_locale: str, pr
         }
     }
 
-    resp = requests.post(url, json=payload, timeout=120)
-    resp.raise_for_status()
-    data = resp.json()
+    last_error = None
+    for idx, model in enumerate(models):
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+        resp = requests.post(url, json=payload, timeout=120)
 
-    candidates = data.get("candidates") or []
-    if not candidates:
-        raise RuntimeError("gemini response has no candidates")
+        if resp.status_code >= 400:
+            detail = ""
+            try:
+                detail = str((resp.json() or {}).get("error", {}).get("message", "")).strip()
+            except Exception:
+                detail = resp.text.strip()
 
-    parts = (
-        candidates[0]
-        .get("content", {})
-        .get("parts", [])
-    )
-    text_out = "".join(str(p.get("text", "")) for p in parts)
-    text_out = text_out.strip()
-    if not text_out:
-        raise RuntimeError("gemini response is empty")
-    return text_out
+            can_retry_with_next = resp.status_code in (400, 403, 404) and idx < len(models) - 1
+            if can_retry_with_next:
+                short_detail = detail[:180] if detail else "model unavailable"
+                print(
+                    f"WARN: Gemini model '{model}' failed with HTTP {resp.status_code} ({short_detail}); trying next candidate",
+                    file=sys.stderr,
+                )
+                last_error = f"{model}: HTTP {resp.status_code} {short_detail}"
+                continue
+
+            resp.raise_for_status()
+
+        data = resp.json()
+
+        candidates = data.get("candidates") or []
+        if not candidates:
+            raise RuntimeError(f"gemini response has no candidates (model: {model})")
+
+        parts = (
+            candidates[0]
+            .get("content", {})
+            .get("parts", [])
+        )
+        text_out = "".join(str(p.get("text", "")) for p in parts)
+        text_out = text_out.strip()
+        if not text_out:
+            raise RuntimeError(f"gemini response is empty (model: {model})")
+        return text_out, model
+
+    if last_error:
+        raise RuntimeError(f"all Gemini model candidates failed; last error: {last_error}")
+    raise RuntimeError("all Gemini model candidates failed")
 
 
 def localized_path(source_path: pathlib.Path, locale: str) -> pathlib.Path:
@@ -332,7 +363,16 @@ def main() -> int:
         raise RuntimeError("GEMINI_API_KEY is required")
 
     model = resolve_gemini_model(api_key, preferred_model)
+    model_candidates = [model] + [m for m in build_model_candidates(preferred_model) if m != model]
     print(f"Using Gemini model: {model}")
+
+    def translate_text(text: str, locale: str) -> str:
+        nonlocal model_candidates
+        translated, used_model = gemini_translate(api_key, model_candidates, text, locale, protected_terms)
+        if used_model != model_candidates[0]:
+            model_candidates = [used_model] + [m for m in model_candidates if m != used_model]
+            print(f"Switched Gemini model: {used_model}")
+        return translated
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -347,9 +387,9 @@ def main() -> int:
 
         for locale in target_locales:
             locale = str(locale)
-            translated_title = gemini_translate(api_key, model, title_en, locale, protected_terms)
-            translated_description = gemini_translate(api_key, model, description_en, locale, protected_terms)
-            translated_body = gemini_translate(api_key, model, body_en, locale, protected_terms)
+            translated_title = translate_text(title_en, locale)
+            translated_description = translate_text(description_en, locale)
+            translated_body = translate_text(body_en, locale)
 
             localized_fm = dict(parts.frontmatter)
             localized_fm["title"] = translated_title
