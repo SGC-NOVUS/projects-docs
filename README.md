@@ -47,6 +47,10 @@ Default sources:
 Required secret:
 - `DOCS_SYNC_GITHUB_TOKEN` (read access to private source repos)
 
+English SSOT intake guard:
+- Sync step imports only English source documents.
+- Files detected as non-English are skipped and listed in `.tmp/source-sync-report.json` under `skipped_non_english`.
+
 ## Required GitHub Secrets
 
 - `DOCS_SYNC_GITHUB_TOKEN` - token for cloning private repos.

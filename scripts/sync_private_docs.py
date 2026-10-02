@@ -109,6 +109,16 @@ def parse_markdown_doc(text: str) -> Tuple[Dict[str, object], str]:
     return {}, text
 
 
+def is_probably_non_english(text: str) -> bool:
+    """
+    Heuristic language guard for English SSOT intake.
+    Skips documents that are clearly Cyrillic-dominant.
+    """
+    cyr = len(re.findall(r"[А-Яа-яЁёІЇЄієїґҐ]", text))
+    latin = len(re.findall(r"[A-Za-z]", text))
+    return cyr >= 40 and cyr > latin
+
+
 def dump_markdown_doc(frontmatter: Dict[str, object], body: str) -> str:
     fm = yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True).strip()
     return f"---\n{fm}\n---\n{body.strip()}\n"
@@ -286,6 +296,7 @@ def main() -> int:
 
     generated_files: Set[pathlib.Path] = set()
     changed_files: List[pathlib.Path] = []
+    skipped_non_english: List[str] = []
 
     for source in sources:
         repo_dir = clone_repository(source, token, clone_root)
@@ -303,6 +314,16 @@ def main() -> int:
 
             text = md_path.read_text(encoding="utf-8")
             existing_fm, body = parse_markdown_doc(text)
+
+            locale_hint = str(existing_fm.get("locale", "")).strip().lower()
+            if locale_hint and locale_hint != "en":
+                skipped_non_english.append(f"{source.repo}:{source_rel_posix}")
+                continue
+
+            if is_probably_non_english(text):
+                skipped_non_english.append(f"{source.repo}:{source_rel_posix}")
+                continue
+
             frontmatter = build_frontmatter(
                 source=source,
                 source_rel=source_rel,
@@ -351,6 +372,7 @@ def main() -> int:
         "synced_english": [relative(p) for p in synced_sorted],
         "changed_english": [relative(p) for p in changed_files],
         "removed_english": [relative(p) for p in removed_files],
+        "skipped_non_english": skipped_non_english,
         "sources": [s.repo for s in sources],
     }
     (TMP_DIR / "source-sync-report.json").write_text(
