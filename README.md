@@ -9,10 +9,12 @@ Public documentation repository for SGC-NOVUS.
 
 ## Repository Layout
 - .github/workflows/auto-translate.yml
+- catalog/docs-catalog-{locale}.json
 - config/locales.json
 - config/sources.json
 - scripts/sync_private_docs.py
 - scripts/translate.py
+- scripts/export_catalog.py
 - scripts/glossary.json
 - content/{cluster}/{category}/{document}.{locale}.md
 
@@ -33,8 +35,15 @@ Every `*.en.md` document must contain:
 2. Script imports/updates English documents under `content/**` with strict frontmatter.
 3. Workflow runs `scripts/translate.py` for changed English docs.
 4. Script also backfills missing locale files for any existing English source docs.
-5. Script generates `*.uk.md` and `*.ru.md` beside source files.
-6. Workflow commits updated docs; public site consumes published repository content directly.
+5. Script automatically re-queues stale locale files (for example pending fallback or suspicious untranslated output).
+6. Script generates `*.uk.md` and `*.ru.md` beside source files.
+7. Workflow exports public static catalog JSON files in `catalog/`.
+8. Workflow commits updated docs and catalog files.
+
+Public static catalog URL pattern:
+- `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-en.json`
+- `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-uk.json`
+- `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-ru.json`
 
 ## Private Source Sync
 
@@ -87,6 +96,7 @@ Localization failure policy:
 - By default, the translator does **not** create new locale files with English fallback body.
 - This prevents publishing `*.ru.md` / `*.uk.md` files that contain English text when Gemini is temporarily unavailable.
 - Optional legacy behavior can be re-enabled with `TRANSLATION_ALLOW_PENDING_FALLBACK=true`.
+- Workflow uses `cancel-in-progress: true` and a job timeout to avoid stale localization runs blocking newer fixes.
 
 ## Gemini Smoke Check
 

@@ -10,6 +10,7 @@ Auto-localize changed English docs using Gemini.
 
 from __future__ import annotations
 
+import difflib
 import json
 import os
 import pathlib
@@ -180,6 +181,106 @@ def unique_paths(paths: List[pathlib.Path]) -> List[pathlib.Path]:
     return out
 
 
+def _normalize_text_for_compare(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text or "").strip().lower())
+
+
+def _count_latin(text: str) -> int:
+    return len(re.findall(r"[A-Za-z]", str(text or "")))
+
+
+def _count_cyrillic(text: str) -> int:
+    return len(re.findall(r"[А-Яа-яЁёІЇЄієїґҐ]", str(text or "")))
+
+
+def is_translation_suspicious(source_text: str, translated_text: str, target_locale: str, scope: str = "body") -> bool:
+    locale = str(target_locale or "").strip().lower()
+    if locale not in {"ru", "uk"}:
+        return False
+
+    src = str(source_text or "")
+    out = str(translated_text or "")
+    src_n = _normalize_text_for_compare(src)
+    out_n = _normalize_text_for_compare(out)
+    if not src_n or not out_n:
+        return False
+
+    src_latin = _count_latin(src)
+    out_latin = _count_latin(out)
+    out_cyr = _count_cyrillic(out)
+
+    # Strict check for short fields (title/description): identical output means no translation.
+    if scope in {"title", "description"}:
+        if src_latin >= 8 and out_n == src_n:
+            return True
+        if src_latin >= 12 and out_cyr == 0 and out_latin >= 10:
+            similarity = difflib.SequenceMatcher(None, src_n[:2000], out_n[:2000]).ratio()
+            if similarity >= 0.85:
+                return True
+        return False
+
+    # Body check is intentionally conservative to avoid false positives on code-heavy docs.
+    if src_latin >= 250 and out_cyr <= 8 and out_latin >= 150:
+        similarity = difflib.SequenceMatcher(None, src_n[:20000], out_n[:20000]).ratio()
+        if similarity >= 0.80:
+            return True
+
+    return False
+
+
+def english_docs_with_stale_locales(content_glob: str, target_locales: List[str]) -> List[pathlib.Path]:
+    stale_sources: List[pathlib.Path] = []
+
+    for source in list_english_docs(content_glob):
+        try:
+            source_parts = parse_markdown_doc(source)
+        except Exception:
+            continue
+
+        source_title = str(source_parts.frontmatter.get("title", ""))
+        source_description = str(source_parts.frontmatter.get("description", ""))
+        source_body = source_parts.body
+
+        stale = False
+        for locale in target_locales:
+            locale_code = str(locale).strip()
+            if not locale_code:
+                continue
+
+            locale_path = localized_path(source, locale_code)
+            if not locale_path.exists():
+                continue
+
+            try:
+                localized_parts = parse_markdown_doc(locale_path)
+            except Exception:
+                stale = True
+                break
+
+            translation_status = str(localized_parts.frontmatter.get("translation_status", "")).strip().lower()
+            if translation_status == "pending":
+                stale = True
+                break
+
+            localized_title = str(localized_parts.frontmatter.get("title", ""))
+            localized_description = str(localized_parts.frontmatter.get("description", ""))
+
+            if is_translation_suspicious(source_title, localized_title, locale_code, "title"):
+                stale = True
+                break
+            if is_translation_suspicious(source_description, localized_description, locale_code, "description"):
+                stale = True
+                break
+            if is_translation_suspicious(source_body, localized_parts.body, locale_code, "body"):
+                stale = True
+                break
+
+        if stale:
+            stale_sources.append(source)
+
+    return stale_sources
+
+
 def build_prompt(text: str, target_locale: str, protected_terms: List[str]) -> str:
     glossary = "\n".join(f"- {term}" for term in protected_terms)
     return (
@@ -331,6 +432,7 @@ def gemini_translate(
     text: str,
     target_locale: str,
     protected_terms: List[str],
+    content_scope: str = "body",
 ) -> Tuple[str, str]:
     if not models:
         raise RuntimeError("no Gemini models configured")
@@ -458,6 +560,18 @@ def gemini_translate(
         text_out = text_out.strip()
         if not text_out:
             raise RuntimeError(f"gemini response is empty (model: {model})")
+
+        if is_translation_suspicious(text, text_out, target_locale, content_scope):
+            short_detail = f"suspicious untranslated output ({target_locale}, {content_scope})"
+            if idx < len(models) - 1:
+                print(
+                    f"WARN: Gemini model '{model}' produced {short_detail}; trying next candidate",
+                    file=sys.stderr,
+                )
+                last_error = f"{model}: {short_detail}"
+                continue
+            raise RuntimeError(short_detail)
+
         return text_out, model
 
     if last_error:
@@ -535,15 +649,22 @@ def main() -> int:
 
     changed_en = git_changed_english_docs(base_sha, head_sha, content_glob)
     missing_locale_sources = english_docs_missing_locales(content_glob, [str(x) for x in target_locales])
+    stale_locale_sources = english_docs_with_stale_locales(content_glob, [str(x) for x in target_locales])
 
     if translate_all:
         changed_en = list_english_docs(content_glob)
         print(f"TRANSLATE_ALL enabled: processing all English docs ({len(changed_en)} file(s)).")
-    elif missing_locale_sources:
-        changed_en = unique_paths(changed_en + missing_locale_sources)
-        print(
-            f"Detected missing locale files for {len(missing_locale_sources)} English source file(s); added to translation queue."
-        )
+    else:
+        if missing_locale_sources:
+            changed_en = unique_paths(changed_en + missing_locale_sources)
+            print(
+                f"Detected missing locale files for {len(missing_locale_sources)} English source file(s); added to translation queue."
+            )
+        if stale_locale_sources:
+            changed_en = unique_paths(changed_en + stale_locale_sources)
+            print(
+                f"Detected stale locale files for {len(stale_locale_sources)} English source file(s); added to translation queue."
+            )
 
     if not changed_en:
         print("No changed English docs detected.")
@@ -587,9 +708,16 @@ def main() -> int:
     print(f"Using Gemini model: {model_candidates[0]}")
     print(f"Gemini cascade order: {', '.join(model_candidates)}")
 
-    def translate_text(text: str, locale: str) -> str:
+    def translate_text(text: str, locale: str, scope: str = "body") -> str:
         nonlocal model_candidates
-        translated, used_model = gemini_translate(api_key, model_candidates, text, locale, protected_terms)
+        translated, used_model = gemini_translate(
+            api_key,
+            model_candidates,
+            text,
+            locale,
+            protected_terms,
+            content_scope=scope,
+        )
         if used_model != model_candidates[0]:
             model_candidates = [used_model] + [m for m in model_candidates if m != used_model]
             print(f"Switched Gemini model: {used_model}")
@@ -611,9 +739,9 @@ def main() -> int:
             out_path = localized_path(source, locale)
 
             try:
-                translated_title = translate_text(title_en, locale)
-                translated_description = translate_text(description_en, locale)
-                translated_body = translate_text(body_en, locale)
+                translated_title = translate_text(title_en, locale, "title")
+                translated_description = translate_text(description_en, locale, "description")
+                translated_body = translate_text(body_en, locale, "body")
             except Exception as exc:
                 if strict_translation:
                     raise

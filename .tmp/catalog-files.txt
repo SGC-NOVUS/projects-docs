@@ -1,0 +1,3 @@
+catalog/docs-catalog-en.json
+catalog/docs-catalog-uk.json
+catalog/docs-catalog-ru.json

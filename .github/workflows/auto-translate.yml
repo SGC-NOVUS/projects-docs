@@ -22,11 +22,12 @@ permissions:
 
 concurrency:
   group: auto-translate-main
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   localize:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +63,9 @@ jobs:
           TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
         run: python scripts/translate.py
 
+      - name: Export public docs catalog JSON
+        run: python scripts/export_catalog.py
+
       - name: Commit localized files
         run: |
           if [[ -z "$(git status --porcelain)" ]]; then
@@ -71,9 +75,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add content
+          git add catalog || true
           [[ -f .tmp/localized-files.txt ]] && git add .tmp/localized-files.txt || true
           [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
           [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
+          [[ -f .tmp/catalog-files.txt ]] && git add .tmp/catalog-files.txt || true
           git commit -m "chore(docs): sync source docs and auto-generate localizations"
           for attempt in 1 2 3; do
             if git push origin HEAD:main; then
