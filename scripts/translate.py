@@ -206,6 +206,7 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
         return False
 
     src_latin = _count_latin(src)
+    src_cyr = _count_cyrillic(src)
     out_latin = _count_latin(out)
     out_cyr = _count_cyrillic(out)
 
@@ -220,9 +221,14 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
         return False
 
     # Body check is intentionally conservative to avoid false positives on code-heavy docs.
+    similarity = difflib.SequenceMatcher(None, src_n[:20000], out_n[:20000]).ratio()
     if src_latin >= 250 and out_cyr <= 8 and out_latin >= 150:
-        similarity = difflib.SequenceMatcher(None, src_n[:20000], out_n[:20000]).ratio()
         if similarity >= 0.80:
+            return True
+
+    # Handle mixed-language source docs where EN SSOT may contain some Cyrillic.
+    if src_latin >= 1000 and similarity >= 0.92:
+        if out_latin >= int(src_latin * 0.85) and out_cyr <= int(src_cyr * 1.25) + 120:
             return True
 
     return False
@@ -309,6 +315,41 @@ def english_docs_with_pending_locales(content_glob: str, target_locales: List[st
             pending_sources.append(source)
 
     return pending_sources
+
+
+def split_markdown_translation_chunks(text: str, max_chars: int) -> List[str]:
+    content = str(text or "")
+    if max_chars <= 0 or len(content) <= max_chars:
+        return [content]
+
+    lines = content.splitlines(keepends=True)
+    chunks: List[str] = []
+    current: List[str] = []
+    current_len = 0
+    heading_re = re.compile(r"^\s{0,3}#{1,6}\s+")
+
+    for line in lines:
+        is_heading = bool(heading_re.match(line))
+
+        if current and is_heading and current_len >= int(max_chars * 0.5):
+            chunks.append("".join(current))
+            current = [line]
+            current_len = len(line)
+            continue
+
+        if current and current_len + len(line) > max_chars:
+            chunks.append("".join(current))
+            current = [line]
+            current_len = len(line)
+            continue
+
+        current.append(line)
+        current_len += len(line)
+
+    if current:
+        chunks.append("".join(current))
+
+    return chunks
 
 
 def build_prompt(text: str, target_locale: str, protected_terms: List[str]) -> str:
@@ -677,6 +718,10 @@ def main() -> int:
         max_docs_per_run = max(0, int(os.getenv("TRANSLATION_MAX_DOCS_PER_RUN", "0")))
     except ValueError:
         max_docs_per_run = 0
+    try:
+        body_chunk_chars = max(1000, int(os.getenv("TRANSLATION_BODY_CHUNK_CHARS", "6000")))
+    except ValueError:
+        body_chunk_chars = 6000
 
     if not allow_pending_fallback:
         cleanup_pending_locale_fallbacks([str(x) for x in target_locales])
@@ -769,6 +814,20 @@ def main() -> int:
             print(f"Switched Gemini model: {used_model}")
         return translated
 
+    def translate_body(text: str, locale: str) -> str:
+        chunks = split_markdown_translation_chunks(text, body_chunk_chars)
+        if len(chunks) <= 1:
+            return translate_text(text, locale, "body")
+
+        translated_chunks: List[str] = []
+        total = len(chunks)
+        for idx, chunk in enumerate(chunks, start=1):
+            translated_chunk = translate_text(chunk, locale, "body")
+            translated_chunks.append(translated_chunk.strip("\n"))
+            print(f"Translated body chunk {idx}/{total} for locale {locale}")
+
+        return "\n\n".join(translated_chunks).strip()
+
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
     localized_written: List[pathlib.Path] = []
@@ -787,7 +846,7 @@ def main() -> int:
             try:
                 translated_title = translate_text(title_en, locale, "title")
                 translated_description = translate_text(description_en, locale, "description")
-                translated_body = translate_text(body_en, locale, "body")
+                translated_body = translate_body(body_en, locale)
             except Exception as exc:
                 if strict_translation:
                     raise
@@ -796,10 +855,17 @@ def main() -> int:
                         try:
                             existing = parse_markdown_doc(out_path)
                             is_pending = str(existing.frontmatter.get("translation_status", "")).strip().lower() == "pending"
-                            if is_pending:
+                            existing_title = str(existing.frontmatter.get("title", ""))
+                            existing_description = str(existing.frontmatter.get("description", ""))
+                            is_stale = (
+                                is_translation_suspicious(title_en, existing_title, locale, "title")
+                                or is_translation_suspicious(description_en, existing_description, locale, "description")
+                                or is_translation_suspicious(body_en, existing.body, locale, "body")
+                            )
+                            if is_pending or is_stale:
                                 out_path.unlink()
                                 print(
-                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed stale pending fallback {relative(out_path)}",
+                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed stale locale file {relative(out_path)}",
                                     file=sys.stderr,
                                 )
                                 continue
