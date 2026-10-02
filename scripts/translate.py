@@ -813,7 +813,10 @@ def main() -> int:
                 if matched and matched not in filtered:
                     filtered.append(matched)
             if filtered:
-                model_candidates = filtered
+                for candidate in available_generative:
+                    if candidate.startswith("gemini") and candidate not in filtered:
+                        filtered.append(candidate)
+                model_candidates = filtered[:10]
             else:
                 preferred_available = [m for m in available_generative if m.startswith("gemini")]
                 model_candidates = preferred_available[:5] if preferred_available else available_generative[:5]
