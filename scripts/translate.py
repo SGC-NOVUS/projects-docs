@@ -416,7 +416,23 @@ def main() -> int:
 
     model = resolve_gemini_model(api_key, preferred_model)
     model_candidates = [model] + [m for m in build_model_candidates(preferred_model) if m != model]
-    print(f"Using Gemini model: {model}")
+
+    try:
+        available_models = fetch_available_models(api_key)
+        available_generative = [
+            m.name
+            for m in available_models
+            if "generateContent" in m.supported_methods or "streamGenerateContent" in m.supported_methods
+        ]
+        if available_generative:
+            available_set = set(available_generative)
+            filtered = [m for m in model_candidates if m in available_set]
+            extras = [m for m in available_generative if m not in filtered]
+            model_candidates = filtered + extras if filtered else available_generative
+    except Exception as exc:
+        print(f"WARN: unable to filter model candidates by ListModels: {exc}", file=sys.stderr)
+
+    print(f"Using Gemini model: {model_candidates[0]}")
 
     def translate_text(text: str, locale: str) -> str:
         nonlocal model_candidates
@@ -439,9 +455,20 @@ def main() -> int:
 
         for locale in target_locales:
             locale = str(locale)
-            translated_title = translate_text(title_en, locale)
-            translated_description = translate_text(description_en, locale)
-            translated_body = translate_text(body_en, locale)
+            out_path = localized_path(source, locale)
+
+            try:
+                translated_title = translate_text(title_en, locale)
+                translated_description = translate_text(description_en, locale)
+                translated_body = translate_text(body_en, locale)
+            except Exception as exc:
+                if out_path.exists():
+                    print(
+                        f"WARN: translation failed for {relative(source)} ({locale}): {exc}; keeping existing {relative(out_path)}",
+                        file=sys.stderr,
+                    )
+                    continue
+                raise
 
             localized_fm = dict(parts.frontmatter)
             localized_fm["title"] = translated_title
@@ -450,7 +477,6 @@ def main() -> int:
             localized_fm["locale"] = locale
 
             out_parts = DocParts(frontmatter=localized_fm, body=translated_body)
-            out_path = localized_path(source, locale)
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(dump_markdown_doc(out_parts), encoding="utf-8")
             localized_written.append(out_path)
