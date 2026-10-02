@@ -45,12 +45,25 @@ Default sources:
 - `SGC-NOVUS/agent-core`
 - `SGC-NOVUS/installer`
 
+Optional product sources:
+- `SGC-NOVUS/novus-edo` (cluster `novus-edo`)
+- `SGC-NOVUS/novus-life` (cluster `novus-life`)
+
+Optional sources can declare `optional: true` and `local_path` for local bootstrap import.
+If unavailable in CI, they are skipped without failing the workflow.
+
 Required secret:
 - `DOCS_SYNC_GITHUB_TOKEN` (read access to private source repos)
 
 English SSOT intake guard:
 - Sync step imports only English source documents.
 - Files detected as non-English are skipped and listed in `.tmp/source-sync-report.json` under `skipped_non_english`.
+
+Selective local sync (only specific source keys):
+
+```bash
+DOCS_SYNC_LOCAL_ROOT=/opt/sgc-novus DOCS_SYNC_SOURCE_KEYS=novus-edo,novus-life python3 scripts/sync_private_docs.py
+```
 
 ## Required GitHub Secrets
 

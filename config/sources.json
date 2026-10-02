@@ -43,6 +43,38 @@
         "docs/dev/**",
         "docs/adr/**"
       ]
+    },
+    {
+      "repo": "SGC-NOVUS/novus-edo",
+      "branch": "main",
+      "repo_key": "novus-edo",
+      "cluster": "novus-edo",
+      "include_globs": [
+        "docs/*.md",
+        "docs/**/*.md"
+      ],
+      "exclude_globs": [
+        "docs/dev/**",
+        "docs/adr/**"
+      ],
+      "local_path": "/opt/dev/novus-edo",
+      "optional": true
+    },
+    {
+      "repo": "SGC-NOVUS/novus-life",
+      "branch": "main",
+      "repo_key": "novus-life",
+      "cluster": "novus-life",
+      "include_globs": [
+        "docs/*.md",
+        "docs/**/*.md"
+      ],
+      "exclude_globs": [
+        "docs/dev/**",
+        "docs/adr/**"
+      ],
+      "local_path": "/root/novus-life",
+      "optional": true
     }
   ]
 }

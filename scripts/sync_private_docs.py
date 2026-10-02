@@ -50,6 +50,8 @@ class SourceSpec:
     cluster: str
     include_globs: List[str]
     exclude_globs: List[str]
+    local_path: str
+    optional: bool
 
 
 def run(cmd: List[str], cwd: pathlib.Path | None = None) -> str:
@@ -86,6 +88,8 @@ def load_sources(path: pathlib.Path) -> Tuple[str, List[SourceSpec]]:
                 cluster=str(item.get("cluster", "novus-os")).strip() or "novus-os",
                 include_globs=include,
                 exclude_globs=exclude,
+                local_path=str(item.get("local_path", "")).strip(),
+                optional=bool(item.get("optional", False)),
             )
         )
 
@@ -282,7 +286,18 @@ def clone_repository(source: SourceSpec, token: str, clone_root: pathlib.Path) -
     return target
 
 
-def resolve_local_repository(source: SourceSpec, local_root: pathlib.Path) -> pathlib.Path:
+def resolve_local_repository(source: SourceSpec, local_root: pathlib.Path | None) -> pathlib.Path:
+    if source.local_path:
+        target = pathlib.Path(source.local_path).expanduser().resolve()
+        if not target.exists() or not target.is_dir():
+            raise RuntimeError(f"local source repo not found: {target}")
+        return target
+
+    if local_root is None:
+        raise RuntimeError(
+            f"local root is not configured for source '{source.repo_key}' and no local_path override is set"
+        )
+
     repo_name = source.repo.split("/")[-1]
     target = local_root / repo_name
     if not target.exists() or not target.is_dir():
@@ -298,11 +313,21 @@ def main() -> int:
     token = os.getenv("DOCS_SYNC_GITHUB_TOKEN", "").strip()
     local_root_raw = os.getenv("DOCS_SYNC_LOCAL_ROOT", "").strip()
     local_root = pathlib.Path(local_root_raw).resolve() if local_root_raw else None
+    source_keys_raw = os.getenv("DOCS_SYNC_SOURCE_KEYS", "").strip()
+    source_keys = {x.strip() for x in source_keys_raw.split(",") if x.strip()}
 
     if not token and local_root is None:
         raise RuntimeError("DOCS_SYNC_GITHUB_TOKEN is required (or use DOCS_SYNC_LOCAL_ROOT for local bootstrap)")
 
     default_version, sources = load_sources(SOURCES_CONFIG)
+    if source_keys:
+        sources = [s for s in sources if s.repo_key in source_keys]
+        if not sources:
+            raise RuntimeError(
+                f"DOCS_SYNC_SOURCE_KEYS specified but no matching sources found: {sorted(source_keys)}"
+            )
+    selected_source_repos = {s.repo for s in sources}
+    partial_source_sync = bool(source_keys)
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     clone_root = TMP_DIR / "source-repos"
@@ -316,10 +341,19 @@ def main() -> int:
     skipped_non_english: List[str] = []
 
     for source in sources:
-        if local_root is not None:
-            repo_dir = resolve_local_repository(source, local_root)
-        else:
-            repo_dir = clone_repository(source, token, clone_root)
+        try:
+            if local_root is not None or source.local_path:
+                repo_dir = resolve_local_repository(source, local_root)
+            else:
+                repo_dir = clone_repository(source, token, clone_root)
+        except Exception as exc:
+            if source.optional:
+                print(
+                    f"WARN: optional source '{source.repo_key}' skipped: {exc}",
+                    file=sys.stderr,
+                )
+                continue
+            raise
 
         for md_path in sorted(repo_dir.rglob("*.md")):
             source_rel = md_path.relative_to(repo_dir)
@@ -374,6 +408,10 @@ def main() -> int:
 
         if str(fm.get("managed_by", "")) != "sync_private_docs":
             continue
+        if partial_source_sync:
+            source_repo = str(fm.get("source_repo", "")).strip()
+            if source_repo not in selected_source_repos:
+                continue
         if path.resolve() in generated_files:
             continue
 
