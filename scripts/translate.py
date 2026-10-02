@@ -724,7 +724,13 @@ def main() -> int:
         body_chunk_chars = 6000
 
     if not allow_pending_fallback:
-        cleanup_pending_locale_fallbacks([str(x) for x in target_locales])
+        if api_key:
+            cleanup_pending_locale_fallbacks([str(x) for x in target_locales])
+        else:
+            print(
+                "WARN: GEMINI_API_KEY is missing; skipping pending fallback cleanup to avoid deleting locale files in dry-runs.",
+                file=sys.stderr,
+            )
 
     changed_en = git_changed_english_docs(base_sha, head_sha, content_glob)
     pending_locale_sources = english_docs_with_pending_locales(content_glob, [str(x) for x in target_locales])
@@ -740,15 +746,15 @@ def main() -> int:
             print(
                 f"Detected pending locale files for {len(pending_locale_sources)} English source file(s); prioritized in translation queue."
             )
+        if stale_locale_sources:
+            changed_en = unique_paths(changed_en + stale_locale_sources)
+            print(
+                f"Detected stale locale files for {len(stale_locale_sources)} English source file(s); prioritized before missing locale files."
+            )
         if missing_locale_sources:
             changed_en = unique_paths(changed_en + missing_locale_sources)
             print(
                 f"Detected missing locale files for {len(missing_locale_sources)} English source file(s); added to translation queue."
-            )
-        if stale_locale_sources:
-            changed_en = unique_paths(changed_en + stale_locale_sources)
-            print(
-                f"Detected stale locale files for {len(stale_locale_sources)} English source file(s); added to translation queue."
             )
 
     if max_docs_per_run > 0 and len(changed_en) > max_docs_per_run:
