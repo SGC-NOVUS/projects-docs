@@ -6,7 +6,6 @@ Auto-localize changed English docs using Gemini.
 - Parses YAML frontmatter + markdown body.
 - Translates title/description/body into target locales.
 - Writes localized sibling files (*.uk.md, *.ru.md).
-- Produces .tmp/docs-sync-payload.json for webhook sync.
 """
 
 from __future__ import annotations
@@ -228,7 +227,6 @@ def main() -> int:
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
     localized_written: List[pathlib.Path] = []
-    source_changed_rel = [relative(p) for p in changed_en]
 
     for source in changed_en:
         parts = parse_markdown_doc(source)
@@ -255,16 +253,6 @@ def main() -> int:
             out_path.write_text(dump_markdown_doc(out_parts), encoding="utf-8")
             localized_written.append(out_path)
             print(f"generated: {relative(out_path)}")
-
-    payload = {
-        "event": "docs.localization.updated",
-        "source_changed": source_changed_rel,
-        "localized_changed": [relative(p) for p in localized_written],
-    }
-    (TMP_DIR / "docs-sync-payload.json").write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
 
     (TMP_DIR / "localized-files.txt").write_text(
         "\n".join(relative(p) for p in localized_written) + "\n",

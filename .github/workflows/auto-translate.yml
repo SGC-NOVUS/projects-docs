@@ -61,41 +61,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add content
           [[ -f .tmp/localized-files.txt ]] && git add .tmp/localized-files.txt || true
-          [[ -f .tmp/docs-sync-payload.json ]] && git add .tmp/docs-sync-payload.json || true
           [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
           [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
           git commit -m "chore(docs): sync source docs and auto-generate localizations"
           git push
-
-      - name: Notify portal webhook
-        env:
-          WEBHOOK_URL: ${{ secrets.DOCS_SYNC_WEBHOOK_URL }}
-          WEBHOOK_SECRET: ${{ secrets.DOCS_SYNC_WEBHOOK_SECRET }}
-        run: |
-          if [[ -z "${WEBHOOK_URL:-}" ]]; then
-            echo "DOCS_SYNC_WEBHOOK_URL not set, skip webhook"
-            exit 0
-          fi
-          if [[ ! -f .tmp/docs-sync-payload.json ]]; then
-            echo "payload missing, skip webhook"
-            exit 0
-          fi
-
-          payload=$(cat .tmp/docs-sync-payload.json)
-          signature=""
-          if [[ -n "$WEBHOOK_SECRET" ]]; then
-            digest=$(printf '%s' "$payload" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | sed 's/^.* //')
-            signature="sha256=$digest"
-          fi
-
-          http_code=$(curl -sS -o /tmp/docs-webhook-response.json -w "%{http_code}" -X POST "$WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -H "X-Hub-Signature-256: $signature" \
-            --data "$payload")
-          echo "Webhook HTTP status: $http_code"
-          cat /tmp/docs-webhook-response.json
-
-          if [[ "$http_code" -lt 200 || "$http_code" -ge 300 ]]; then
-            echo "Webhook delivery failed"
-            exit 1
-          fi

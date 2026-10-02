@@ -33,7 +33,7 @@ Every `*.en.md` document must contain:
 2. Script imports/updates English documents under `content/**` with strict frontmatter.
 3. Workflow runs `scripts/translate.py` for changed English docs.
 4. Script generates `*.uk.md` and `*.ru.md` beside source files.
-5. Workflow commits updated docs and sends sync webhook.
+5. Workflow commits updated docs; public site consumes published repository content directly.
 
 ## Private Source Sync
 
@@ -55,5 +55,3 @@ English SSOT intake guard:
 
 - `DOCS_SYNC_GITHUB_TOKEN` - token for cloning private repos.
 - `GEMINI_API_KEY` - token for Gemini localization.
-- `DOCS_SYNC_WEBHOOK_URL` (optional) - portal sync webhook endpoint.
-- `DOCS_SYNC_WEBHOOK_SECRET` (optional) - HMAC secret for webhook signature.
