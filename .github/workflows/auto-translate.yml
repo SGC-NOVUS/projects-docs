@@ -10,7 +10,7 @@ on:
       translation_max_docs_per_run:
         description: "Max English docs translated in one run (0 = unlimited)"
         required: false
-        default: "3"
+        default: "1"
   schedule:
     - cron: "17 */6 * * *"
   push:
@@ -65,7 +65,7 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
           TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
-          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '3' }}
+          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '1' }}
         run: python scripts/translate.py
 
       - name: Export public docs catalog JSON
