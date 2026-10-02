@@ -222,6 +222,13 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
 
     # Body check is intentionally conservative to avoid false positives on code-heavy docs.
     similarity = difflib.SequenceMatcher(None, src_n[:20000], out_n[:20000]).ratio()
+    src_len = len(src_n)
+    out_len = len(out_n)
+
+    # Truncated body output usually indicates model cut-off, not a valid translation.
+    if src_len >= 1200 and out_len <= int(src_len * 0.45):
+        return True
+
     if src_latin >= 250 and out_cyr <= 8 and out_latin >= 150:
         if similarity >= 0.80:
             return True
@@ -719,9 +726,9 @@ def main() -> int:
     except ValueError:
         max_docs_per_run = 0
     try:
-        body_chunk_chars = max(1000, int(os.getenv("TRANSLATION_BODY_CHUNK_CHARS", "6000")))
+        body_chunk_chars = max(1000, int(os.getenv("TRANSLATION_BODY_CHUNK_CHARS", "3500")))
     except ValueError:
-        body_chunk_chars = 6000
+        body_chunk_chars = 3500
 
     if not allow_pending_fallback:
         if api_key:
