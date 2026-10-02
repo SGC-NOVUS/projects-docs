@@ -875,6 +875,18 @@ def main() -> int:
 
         return "\n\n".join(translated_chunks).strip()
 
+    def translate_optional_field(text: str, locale: str, scope: str) -> str:
+        try:
+            return translate_text(text, locale, scope)
+        except Exception as exc:
+            if strict_translation:
+                raise
+            print(
+                f"WARN: {scope} translation failed for locale {locale}: {exc}; using source text fallback",
+                file=sys.stderr,
+            )
+            return text
+
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
     localized_written: List[pathlib.Path] = []
@@ -891,8 +903,8 @@ def main() -> int:
             out_path = localized_path(source, locale)
 
             try:
-                translated_title = translate_text(title_en, locale, "title")
-                translated_description = translate_text(description_en, locale, "description")
+                translated_title = translate_optional_field(title_en, locale, "title")
+                translated_description = translate_optional_field(description_en, locale, "description")
                 translated_body = translate_body(body_en, locale)
             except Exception as exc:
                 if strict_translation:
