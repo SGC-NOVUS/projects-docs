@@ -1,0 +1,25 @@
+{
+  "protected_terms": [
+    "SGC-NOVUS",
+    "NOVUS",
+    "NOVUS OS",
+    "NOVUS Flow.EDO",
+    "Novus-Life",
+    "NovusID",
+    "N.O.V.A.",
+    "Control-Plane",
+    "Data-Plane",
+    "gRPC",
+    "mTLS",
+    "OpenAPI 3.1",
+    "VFS",
+    "Redis",
+    "AES-256-GCM",
+    "PBKDF2",
+    "WASM",
+    "Dexie.js",
+    "Tesseract.js",
+    "HMAC-SHA256",
+    "Replay Guard"
+  ]
+}

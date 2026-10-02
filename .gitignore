@@ -1,0 +1,6 @@
+# Python cache
+scripts/__pycache__/
+*.pyc
+
+# Local temporary clone workspace for source sync
+.tmp/source-repos/
