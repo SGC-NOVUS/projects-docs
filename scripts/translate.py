@@ -281,6 +281,36 @@ def english_docs_with_stale_locales(content_glob: str, target_locales: List[str]
     return stale_sources
 
 
+def english_docs_with_pending_locales(content_glob: str, target_locales: List[str]) -> List[pathlib.Path]:
+    pending_sources: List[pathlib.Path] = []
+
+    for source in list_english_docs(content_glob):
+        has_pending = False
+        for locale in target_locales:
+            locale_code = str(locale).strip()
+            if not locale_code:
+                continue
+
+            locale_path = localized_path(source, locale_code)
+            if not locale_path.exists():
+                continue
+
+            try:
+                localized_parts = parse_markdown_doc(locale_path)
+            except Exception:
+                continue
+
+            translation_status = str(localized_parts.frontmatter.get("translation_status", "")).strip().lower()
+            if translation_status == "pending":
+                has_pending = True
+                break
+
+        if has_pending:
+            pending_sources.append(source)
+
+    return pending_sources
+
+
 def build_prompt(text: str, target_locale: str, protected_terms: List[str]) -> str:
     glossary = "\n".join(f"- {term}" for term in protected_terms)
     return (
@@ -643,11 +673,16 @@ def main() -> int:
     head_sha = os.getenv("HEAD_SHA")
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     translate_all = os.getenv("TRANSLATE_ALL", "").strip().lower() in {"1", "true", "yes"}
+    try:
+        max_docs_per_run = max(0, int(os.getenv("TRANSLATION_MAX_DOCS_PER_RUN", "0")))
+    except ValueError:
+        max_docs_per_run = 0
 
     if not allow_pending_fallback:
         cleanup_pending_locale_fallbacks([str(x) for x in target_locales])
 
     changed_en = git_changed_english_docs(base_sha, head_sha, content_glob)
+    pending_locale_sources = english_docs_with_pending_locales(content_glob, [str(x) for x in target_locales])
     missing_locale_sources = english_docs_missing_locales(content_glob, [str(x) for x in target_locales])
     stale_locale_sources = english_docs_with_stale_locales(content_glob, [str(x) for x in target_locales])
 
@@ -655,6 +690,11 @@ def main() -> int:
         changed_en = list_english_docs(content_glob)
         print(f"TRANSLATE_ALL enabled: processing all English docs ({len(changed_en)} file(s)).")
     else:
+        if pending_locale_sources:
+            changed_en = unique_paths(pending_locale_sources + changed_en)
+            print(
+                f"Detected pending locale files for {len(pending_locale_sources)} English source file(s); prioritized in translation queue."
+            )
         if missing_locale_sources:
             changed_en = unique_paths(changed_en + missing_locale_sources)
             print(
@@ -665,6 +705,12 @@ def main() -> int:
             print(
                 f"Detected stale locale files for {len(stale_locale_sources)} English source file(s); added to translation queue."
             )
+
+    if max_docs_per_run > 0 and len(changed_en) > max_docs_per_run:
+        print(
+            f"TRANSLATION_MAX_DOCS_PER_RUN={max_docs_per_run}: limiting translation queue from {len(changed_en)} to {max_docs_per_run} file(s)."
+        )
+        changed_en = changed_en[:max_docs_per_run]
 
     if not changed_en:
         print("No changed English docs detected.")

@@ -40,6 +40,11 @@ Every `*.en.md` document must contain:
 7. Workflow exports public static catalog JSON files in `catalog/`.
 8. Workflow commits updated docs and catalog files.
 
+Incremental translation mode:
+- Workflow sets `TRANSLATION_MAX_DOCS_PER_RUN` (default `8`) to ensure each run finishes and commits progress.
+- Pending locale files are prioritized first, then missing/stale locales.
+- Set `TRANSLATION_MAX_DOCS_PER_RUN=0` for unlimited translation in one run.
+
 Public static catalog URL pattern:
 - `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-en.json`
 - `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-uk.json`
