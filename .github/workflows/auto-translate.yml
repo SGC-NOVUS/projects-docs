@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: auto-translate-main
+  group: auto-translate-main-v2
   cancel-in-progress: true
 
 jobs:
