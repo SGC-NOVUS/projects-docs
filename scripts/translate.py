@@ -229,6 +229,16 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
     if src_len >= 1200 and out_len <= int(src_len * 0.45):
         return True
 
+    src_starts_with_heading = bool(re.match(r"^\s{0,3}#{1,6}\s+", src))
+    out_starts_with_heading = bool(re.match(r"^\s{0,3}#{1,6}\s+", out))
+    if src_starts_with_heading and not out_starts_with_heading:
+        return True
+
+    src_headings = len(re.findall(r"^\s{0,3}#{1,6}\s+", src, flags=re.MULTILINE))
+    out_headings = len(re.findall(r"^\s{0,3}#{1,6}\s+", out, flags=re.MULTILINE))
+    if src_headings >= 3 and out_headings == 0:
+        return True
+
     if src_latin >= 250 and out_cyr <= 8 and out_latin >= 150:
         if similarity >= 0.80:
             return True
@@ -828,14 +838,37 @@ def main() -> int:
         return translated
 
     def translate_body(text: str, locale: str) -> str:
+        def translate_chunk(chunk_text: str, chunk_chars: int, depth: int = 0) -> str:
+            try:
+                return translate_text(chunk_text, locale, "body")
+            except Exception as exc:
+                if depth >= 2 or len(chunk_text) < 1400:
+                    raise
+
+                next_chars = max(1000, min(chunk_chars // 2, len(chunk_text) // 2))
+                subchunks = split_markdown_translation_chunks(chunk_text, next_chars)
+                if len(subchunks) <= 1:
+                    raise
+
+                print(
+                    f"WARN: body chunk translation failed for locale {locale} ({exc}); retrying with smaller chunks ({len(subchunks)} chunk(s), depth={depth + 1})",
+                    file=sys.stderr,
+                )
+
+                translated_subchunks: List[str] = []
+                for subchunk in subchunks:
+                    translated_subchunks.append(translate_chunk(subchunk, next_chars, depth + 1).strip("\n"))
+
+                return "\n\n".join(translated_subchunks).strip()
+
         chunks = split_markdown_translation_chunks(text, body_chunk_chars)
         if len(chunks) <= 1:
-            return translate_text(text, locale, "body")
+            return translate_chunk(text, body_chunk_chars)
 
         translated_chunks: List[str] = []
         total = len(chunks)
         for idx, chunk in enumerate(chunks, start=1):
-            translated_chunk = translate_text(chunk, locale, "body")
+            translated_chunk = translate_chunk(chunk, body_chunk_chars)
             translated_chunks.append(translated_chunk.strip("\n"))
             print(f"Translated body chunk {idx}/{total} for locale {locale}")
 
