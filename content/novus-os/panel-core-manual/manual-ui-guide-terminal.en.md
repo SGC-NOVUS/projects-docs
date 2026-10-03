@@ -9,7 +9,7 @@ title: Terminal
 description: The Terminal workspace provides an authenticated, browser-native console
   for authorized operational work. It is a Panel surface, not a direct browser-to-host
   connection.
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

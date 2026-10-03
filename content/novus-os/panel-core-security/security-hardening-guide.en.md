@@ -9,7 +9,7 @@ title: Platform Security Operations
 description: This guide is for authorized NOVUS-OS operators. Use the Security workspace
   in the Panel for firewall rules, access reviews, security status and recovery requests.
   Host-level co...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

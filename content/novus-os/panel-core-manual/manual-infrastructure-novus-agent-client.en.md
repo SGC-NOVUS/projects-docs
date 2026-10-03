@@ -9,7 +9,7 @@ title: NOVUS Agent Transport
 description: NOVUS Agent Transport is the Panel boundary for privileged node operations.
   It selects the registered node transport, applies Panel authorization and returns
   normalized results...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

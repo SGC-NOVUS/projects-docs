@@ -7,7 +7,7 @@ status: active
 version: 0.1.0
 title: Manual
 description: Руководство для администраторов и операторов панели.
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

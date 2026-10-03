@@ -9,7 +9,7 @@ title: System Security
 description: NOVUS-OS applies layered security controls across identity, permissions,
   browser sessions, the Control-Plane, the Agent transport and managed workloads.
   This guide is for author...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

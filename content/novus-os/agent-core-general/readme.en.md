@@ -8,7 +8,7 @@ version: 0.1.0
 title: NOVUS Agent-Core Documentation
 description: '**Version:** 0.2.0 **Language:** Go 1.25 **Purpose:** Authenticated
   NOVUS-OS node runtime for approved host-local work.'
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

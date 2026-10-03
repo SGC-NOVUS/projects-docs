@@ -7,7 +7,7 @@ status: active
 version: 0.1.0
 title: 'Contributing: Documentation and Contracts'
 description: Rules for keeping docs/ and API contracts synchronized with code.
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

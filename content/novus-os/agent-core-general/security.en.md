@@ -8,7 +8,7 @@ version: 0.1.0
 title: 'NOVUS Agent: Security Model'
 description: NOVUS Agent is the host-side Data-Plane daemon. It accepts only the supported
   Panel transport and is not a general-purpose administrative endpoint.
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

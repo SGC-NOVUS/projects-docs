@@ -9,7 +9,7 @@ title: MODULE SPECIFICATION
 description: 'Status: normative Owner: Panel Core Engineering Scope: panel-core module
   architecture Last updated: 2026-09-24 Anchors: AGENTS.md, ECOSYSTEM_MANIFEST.md,
   Master Plan WS-D'
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

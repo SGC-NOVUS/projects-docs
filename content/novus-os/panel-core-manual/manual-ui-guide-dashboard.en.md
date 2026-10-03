@@ -9,7 +9,7 @@ title: Dashboard
 description: The Dashboard provides an operational overview of managed nodes, workloads,
   alerts, tasks and platform health. It is a read-oriented workspace with approved
   actions for authoriz...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

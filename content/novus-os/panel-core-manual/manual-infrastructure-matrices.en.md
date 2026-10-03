@@ -9,7 +9,7 @@ title: Runtime Matrices
 description: Runtime Matrices define approved workload templates, resource expectations,
   network declarations and managed storage requirements. Operators choose a matrix
   through the Panel wh...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

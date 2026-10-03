@@ -9,7 +9,7 @@ title: File Gateways
 description: File Gateways define the approved storage mounts available to a managed
   runtime instance. Operators use the Panel to review and save gateway declarations;
   the runtime service en...
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

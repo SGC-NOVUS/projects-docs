@@ -7,7 +7,7 @@ status: active
 version: 0.1.0
 title: FULL MODULAR MASTER PLAN - AGENT CORE (CANONICAL SSoT)
 description: 'Status: COMPLETED & LOCKED (Baseline v0.2.0, 2026-09-25)'
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

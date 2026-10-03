@@ -9,7 +9,7 @@ title: 'NOVUS Agent-Core: gRPC API Reference'
 description: '**Contract source:** proto/novus.proto and proto/novus_runtime_surface.proto.
   Field numbers, message shapes, and service methods in those files are authoritative.
   This page is a...'
-last_updated: '2026-10-02'
+last_updated: '2026-10-03'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core
