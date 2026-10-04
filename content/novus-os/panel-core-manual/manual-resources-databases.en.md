@@ -9,7 +9,7 @@ title: Databases
 description: The Databases workspace manages user-created data-plane databases and
   presents read-only inventory from connected nodes. Control-plane data is isolated
   from tenant database oper...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

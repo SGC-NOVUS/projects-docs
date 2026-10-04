@@ -9,7 +9,7 @@ title: Vue Email Module Plan (Panel-Core)
 description: 'Add a first-class email template module for NOVUS-OS with: - theme-aware
   HTML email generation, - versioned template storage, - UI editing and preview, -
   safe test-send and prod...'
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

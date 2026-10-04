@@ -9,7 +9,7 @@ title: Platform Operations
 description: The Platform Operations workspace gives authorized operators a single
   control surface for managed services, node health, scheduled work and operational
   alerts. Host administrati...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

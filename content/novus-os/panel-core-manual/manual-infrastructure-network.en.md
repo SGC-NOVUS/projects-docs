@@ -9,7 +9,7 @@ title: Website Network Operations
 description: The Websites workspace lets authorized operators manage supported website
   configuration, certificates and runtime actions through NOVUS-OS. The Panel authorizes
   each request and...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

@@ -9,7 +9,7 @@ title: 'NOVUS Agent-Core: Pairing'
 description: Pairing establishes a single trusted Panel binding for an Agent. After
   successful pairing, privileged runtime calls are accepted only from the bound Panel
   through the signed gRP...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

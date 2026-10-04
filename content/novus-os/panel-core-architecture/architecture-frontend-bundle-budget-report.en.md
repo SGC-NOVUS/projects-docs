@@ -7,7 +7,7 @@ status: active
 version: 0.1.0
 title: Frontend Bundle Budget Report
 description: 'Overall status: PASS Dashboard status: FAIL'
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

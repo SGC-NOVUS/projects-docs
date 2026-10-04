@@ -9,7 +9,7 @@ title: NOVUS Agent Deployment
 description: NOVUS Agent is deployed by the approved NOVUS installation or node-management
   workflow. Operators pair and monitor nodes through the Panel; they do not apply
   host service config...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

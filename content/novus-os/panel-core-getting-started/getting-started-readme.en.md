@@ -9,7 +9,7 @@ title: Getting Started With NOVUS-OS Panel
 description: NOVUS-OS Panel is the Control-Plane of the platform. It provides the
   browser workspace for users and operators while delegating privileged host work
   to the authenticated NOVUS A...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

@@ -9,7 +9,7 @@ title: NOVUS Agent-Core - Virtual File System (VFS)
 description: VFS in agent-core is a host-side filesystem abstraction used by NovusRuntimeSurface
   RPC handlers. It enforces path validation and symlink hardening before file operations
   are ex...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

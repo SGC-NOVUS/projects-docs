@@ -9,7 +9,7 @@ title: NOVUS-OS Ecosystem Manifest
 description: '**Status:** normative cross-repository architecture contract **Scope:**
   panel-core, agent-core, and installer **Canonical source:** this document is authored
   in panel-core/docs/...'
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

@@ -9,7 +9,7 @@ title: Files And Storage
 description: The Files workspace provides permissioned access to managed instance
   and site storage through the NOVUS Agent. The Panel authorizes every request; it
   does not grant browser clie...
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

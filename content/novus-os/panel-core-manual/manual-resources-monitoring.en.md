@@ -8,7 +8,7 @@ version: 0.1.0
 title: Monitoring
 description: The Monitoring workspace manages approved health targets, probes, alerts
   and status views for NOVUS-OS resources.
-last_updated: '2026-10-03'
+last_updated: '2026-10-04'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core
