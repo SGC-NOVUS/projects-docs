@@ -1,2 +1,4 @@
-content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.uk.md
-content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.ru.md
+content/novus-life/novus-life-general/architecture.uk.md
+content/novus-life/novus-life-general/architecture.ru.md
+content/novus-life/novus-life-general/ground-truth-implementation-2026-09-28.uk.md
+content/novus-life/novus-life-general/ground-truth-implementation-2026-09-28.ru.md

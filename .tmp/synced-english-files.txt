@@ -1,3 +1,8 @@
+content/novus-life/novus-life-general/architecture.en.md
+content/novus-life/novus-life-general/ground-truth-implementation-2026-09-28.en.md
+content/novus-life/novus-life-general/privacy-policy.en.md
+content/novus-life/novus-life-general/security.en.md
+content/novus-life/novus-life-general/terms-of-service.en.md
 content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.en.md
 content/novus-os/agent-core-general/api.en.md
 content/novus-os/agent-core-general/configuration.en.md

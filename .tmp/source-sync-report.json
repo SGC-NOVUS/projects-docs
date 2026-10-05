@@ -1,6 +1,11 @@
 {
   "event": "docs.source.sync",
   "synced_english": [
+    "content/novus-life/novus-life-general/architecture.en.md",
+    "content/novus-life/novus-life-general/ground-truth-implementation-2026-09-28.en.md",
+    "content/novus-life/novus-life-general/privacy-policy.en.md",
+    "content/novus-life/novus-life-general/security.en.md",
+    "content/novus-life/novus-life-general/terms-of-service.en.md",
     "content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.en.md",
     "content/novus-os/agent-core-general/api.en.md",
     "content/novus-os/agent-core-general/configuration.en.md",
@@ -42,45 +47,11 @@
     "content/novus-os/panel-core-security/security-hardening-guide.en.md"
   ],
   "changed_english": [
-    "content/novus-os/panel-core-general/contributing.en.md",
-    "content/novus-os/panel-core-general/troubleshooting.en.md",
-    "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-    "content/novus-os/panel-core-architecture/architecture-module-specification.en.md",
-    "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-    "content/novus-os/panel-core-architecture/architecture-repository-audit.en.md",
-    "content/novus-os/panel-core-architecture/architecture-services-servers-matrices-phase1-plan.en.md",
-    "content/novus-os/panel-core-architecture/architecture-vue-email-module-plan.en.md",
-    "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
-    "content/novus-os/panel-core-getting-started/getting-started-readme.en.md",
-    "content/novus-os/panel-core-manual/manual-readme.en.md",
-    "content/novus-os/panel-core-manual/manual-infrastructure-matrices.en.md",
-    "content/novus-os/panel-core-manual/manual-infrastructure-network.en.md",
-    "content/novus-os/panel-core-manual/manual-infrastructure-network-channels.en.md",
-    "content/novus-os/panel-core-manual/manual-infrastructure-novus-agent-client.en.md",
-    "content/novus-os/panel-core-manual/manual-infrastructure-vfs.en.md",
-    "content/novus-os/panel-core-manual/manual-resources-backups.en.md",
-    "content/novus-os/panel-core-manual/manual-resources-databases.en.md",
-    "content/novus-os/panel-core-manual/manual-resources-file-gateways.en.md",
-    "content/novus-os/panel-core-manual/manual-resources-monitoring.en.md",
-    "content/novus-os/panel-core-manual/manual-system-permission-guard.en.md",
-    "content/novus-os/panel-core-manual/manual-system-scheduler.en.md",
-    "content/novus-os/panel-core-manual/manual-system-security.en.md",
-    "content/novus-os/panel-core-manual/manual-system-service-desk.en.md",
-    "content/novus-os/panel-core-manual/manual-system-services.en.md",
-    "content/novus-os/panel-core-manual/manual-system-settings.en.md",
-    "content/novus-os/panel-core-manual/manual-system-setup-wizard.en.md",
-    "content/novus-os/panel-core-manual/manual-ui-guide-dashboard.en.md",
-    "content/novus-os/panel-core-manual/manual-ui-guide-terminal.en.md",
-    "content/novus-os/panel-core-security/security-hardening-guide.en.md",
-    "content/novus-os/agent-core-general/api.en.md",
-    "content/novus-os/agent-core-general/configuration.en.md",
-    "content/novus-os/agent-core-general/deployment.en.md",
-    "content/novus-os/agent-core-general/pairing.en.md",
-    "content/novus-os/agent-core-general/readme.en.md",
-    "content/novus-os/agent-core-general/security.en.md",
-    "content/novus-os/agent-core-general/vfs.en.md",
-    "content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.en.md",
-    "content/novus-os/agent-core-getting-started/getting-started-readme.en.md"
+    "content/novus-life/novus-life-general/architecture.en.md",
+    "content/novus-life/novus-life-general/ground-truth-implementation-2026-09-28.en.md",
+    "content/novus-life/novus-life-general/privacy-policy.en.md",
+    "content/novus-life/novus-life-general/security.en.md",
+    "content/novus-life/novus-life-general/terms-of-service.en.md"
   ],
   "removed_english": [],
   "skipped_non_english": [
@@ -112,13 +83,19 @@
     "SGC-NOVUS/installer:docs/INSTALL_STEPS.md",
     "SGC-NOVUS/installer:docs/README.md",
     "SGC-NOVUS/installer:docs/ROLLBACK.md",
-    "SGC-NOVUS/installer:docs/SECURITY.md"
+    "SGC-NOVUS/installer:docs/SECURITY.md",
+    "SGC-NOVUS/novus-life:docs/MIGRATION_PHASES.md"
   ],
   "sources": [
-    "SGC-NOVUS/panel-core",
     "SGC-NOVUS/agent-core",
     "SGC-NOVUS/installer",
-    "SGC-NOVUS/novus-edo",
-    "SGC-NOVUS/novus-life"
+    "SGC-NOVUS/novus-life",
+    "SGC-NOVUS/panel-core"
+  ],
+  "skipped_sources": [
+    {
+      "repo": "SGC-NOVUS/novus-edo",
+      "reason": "command failed: git clone --depth 1 --branch main --no-tags https://x-access-token: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@github.com/SGC-NOVUS/novus-edo.git /home/runner/work/projects-docs/projects-docs/.tmp/source-repos/novus-edo\nCloning into '/home/runner/work/projects-docs/projects-docs/.tmp/source-repos/novus-edo'...\nremote: Repository not found.\nfatal: repository 'https://github.com/SGC-NOVUS/novus-edo.git/' not found\n"
+    }
   ]
 }
