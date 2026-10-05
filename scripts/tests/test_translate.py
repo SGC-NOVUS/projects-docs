@@ -112,6 +112,25 @@ class GeminiCascadeTests(unittest.TestCase):
 
         self.assertEqual(post.call_count, 2)
 
+    def test_suspicious_output_from_last_model_is_a_quality_error(self) -> None:
+        source_text = (
+            "The service validates configuration and applies requested settings. " * 5
+        )
+        response = FakeResponse(
+            200,
+            {"candidates": [{"content": {"parts": [{"text": source_text}]}}]},
+        )
+        with patch.object(translate.requests, "post", return_value=response):
+            with self.assertRaises(translate.GeminiTranslationQualityError):
+                translate.gemini_translate(
+                    "test-key",
+                    ["model-a"],
+                    source_text,
+                    "ru",
+                    [],
+                    content_scope="body",
+                )
+
     def test_quota_order_preserves_configured_fallback_priority(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             tracker = translate.GeminiQuotaTracker(

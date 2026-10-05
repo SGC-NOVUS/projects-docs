@@ -58,6 +58,10 @@ class GeminiQuotaExhaustedError(RuntimeError):
     pass
 
 
+class GeminiTranslationQualityError(RuntimeError):
+    pass
+
+
 @dataclass
 class DocParts:
     frontmatter: Dict[str, object]
@@ -1010,7 +1014,7 @@ def gemini_translate(
                 )
                 last_error = f"{model}: {short_detail}"
                 continue
-            raise RuntimeError(short_detail)
+            raise GeminiTranslationQualityError(short_detail)
 
         return text_out, model
 
@@ -1333,9 +1337,14 @@ def main() -> int:
                     return "\n\n".join(translated_chunks).strip()
 
                 translated_body = translate_body(body_en, locale)
-            except GeminiQuotaExhaustedError as exc:
+            except (GeminiQuotaExhaustedError, GeminiTranslationQualityError) as exc:
+                reason = (
+                    "quality validation failed"
+                    if isinstance(exc, GeminiTranslationQualityError)
+                    else "quota/rate limit exhausted"
+                )
                 print(
-                    f"WARN: pausing localization at {source_name} ({locale}): {exc}. "
+                    f"WARN: pausing localization at {source_name} ({locale}): {reason}: {exc}. "
                     "Completed chunks are checkpointed for the next run.",
                     file=sys.stderr,
                 )

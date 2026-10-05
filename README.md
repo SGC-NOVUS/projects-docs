@@ -48,6 +48,7 @@ Incremental translation mode:
 - Gemini respects the model order in `config/locales.json`, tracks this repository's requests across workflow runs in `.tmp/gemini-usage.json`, and moves to the next model when the current model's configured RPM, TPM, or RPD budget is unavailable. A shared sliding-window limiter caps this workflow at 15 Gemini API requests per minute across all models, including retries. Before sending a request, it reserves a conservative input/output token budget; model context limits are also checked using Gemini API metadata when available.
 - Gemini's quotas apply to the API project/key, not just this repository. Other applications using the same key can consume shared capacity; Gemini's 429 response is treated as authoritative and blocks that model for the applicable quota window.
 - When the full model cascade is exhausted, translation pauses with a warning instead of failing the workflow; completed content and checkpoints are committed, and the next scheduled run resumes.
+- If every model returns output that fails localization quality checks, the affected document/locale is left unpublished and the workflow pauses with a warning; a later run can retry it with fresh model capacity.
 - Catalog export excludes pending, empty, untranslated, and materially incomplete RU/UK documents.
 - Site import is held until both RU and UK catalogs contain validated translations for every English document, preventing an incomplete catalog from replacing the live database.
 
