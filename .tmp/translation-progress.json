@@ -15,6 +15,171 @@
       "source": "content/novus-life/novus-life-general/architecture.en.md",
       "locale": "uk",
       "translation": "# Огляд архітектури: Novus Life\n\n**Novus Life** — це приватна утиліта з пріоритетом автономної роботи (offline-first) та платформа для керування домашніми витратами, розроблена та підтримувана **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську криптографічну ізоляцію з автономною серверною інфраструктурою.\n\n---\n\n## 1. Високорівнева архітектура\n\nСистема працює за **гібридною моделлю зберігання та пріоритету автономної роботи (Hybrid Storage & Offline-First Model)**:\n1. **Первинний клієнтський шар (IndexedDB через Dexie.js)**:\n   - Усі безпосередні взаємодії, введення показників лічильників, оцінки тарифів та перегляд історії виконуються безпосередньо з локальною IndexedDB.\n   - Захищено від очищення кешу на рівні ОС за допомогою **Persistent Storage API** (`navigator.storage.persist()`).\n   - Забезпечує 100% оперативну спроможність в автономних середовищах (наприклад, підвалах, комунікаційних шахтах, відключених мережах).\n2. **Шар синхронізації сервера (Self-Hosted VPS)**:\n   - Створено на базі **Node.js 22+ (Express + pg driver)** та **PostgreSQL 16**.\n   - Доступно через суворо внутрішнє проксіювання за Nginx у межах домену `https://novus-life.online/api/*`.\n   - Дані фіксуються в атомарних SQL-транзакціях (`BEGIN ... COMMIT`), щоб запобігти станам часткової синхронизації.\n   - Усі реляційні сутності використовують первинні ключі **UUIDv7** (RFC 9562) для індексування у порядку міток часу без фрагментації сторінок B-Tree.\n3. **Шар резервного копіювання (Google Drive `appDataFolder`)**:\n   - Опціональна синхронізація зашифрованих архівів за допомогою прихованої папки Google Drive `appDataFolder` (`https://www.googleapis.com/auth/drive.appdata`).\n   - Ізольовано від кореневих файлів користувача, що запобігає випадковому видаленню вручну.\n\n```\n+-------------------------------------------------------------------------+\n|                              CLIENT DEVICE                              |\n|                                                                         |"
+    },
+    "24bd597e35b419ac9ffbeae263f7172444dd433dfcd37de1ea808a1c10847405": {
+      "source": "content/novus-life/novus-life-general/security.en.md",
+      "locale": "uk",
+      "translation": "Архітектура безпеки та криптографічна модель"
+    },
+    "88712fca79cf655e743f84451377b06632db9a008930941a0d0c507af751d9e7": {
+      "source": "content/novus-life/novus-life-general/security.en.md",
+      "locale": "ru",
+      "translation": "Архитектура безопасности и криптографическая модель"
+    },
+    "44bedbce571549744ba0ccb8e2756418885dbffb497015817100273073c490e4": {
+      "source": "content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.en.md",
+      "locale": "uk",
+      "translation": "ПОВНИЙ МОДУЛЬНИЙ ГЕНПЛАН — ЯДРО АГЕНТА (КАНОНІЧНИЙ SSoT)"
+    },
+    "524640a8c5cfda902c5fffb97e8a1d0a9c5790b5ebaeb63937a37b8c5fd2ae66": {
+      "source": "content/novus-os/agent-core-architecture/architecture-full-modular-master-plan-agent.en.md",
+      "locale": "uk",
+      "translation": "Статус: ВИКОНАНО ТА ЗАБЛОКОВАНО (Базова лінія v0.2.0, 2026-09-25)"
+    },
+    "97f6375d1cb85528c9e98f651dee873c5209dc34b44ef8c2fa76cf737decd8b6": {
+      "source": "content/novus-os/agent-core-general/api.en.md",
+      "locale": "ru",
+      "translation": "NOVUS Agent-Core: Справочник по gRPC API"
+    },
+    "344ec531abdb35d238c0723f6b448fc47117387f0b7c6547b74d29e6037a68bf": {
+      "source": "content/novus-os/agent-core-general/api.en.md",
+      "locale": "ru",
+      "translation": "**Источник контракта:** proto/novus.proto и proto/novus_runtime_surface.proto. Номера полей, структуры сообщений и методы сервисов в этих файлах являются авторитетными. Эта страница представляет собой..."
+    },
+    "0e6746b9e02ef3a6da5efffa65e8afd72a41911849472df194e47ed7cbe22f94": {
+      "source": "content/novus-os/agent-core-general/api.en.md",
+      "locale": "ru",
+      "translation": "# NOVUS Agent-Core: gRPC API Reference\n\n**Contract source:** `proto/novus.proto` и `proto/novus_runtime_surface.proto`. Номера полей, структуры сообщений и методы сервисов в этих файлах являются каноническими. Эта страница представляет собой безопасный справочник по навигации и не заменяет сгенерированные клиенты protobuf.\n\n## Transport And Access\n\n- Транспортом является gRPC поверх TLS.\n- Стандартные привилегированные вызовы содержат метаданные `x-request-timestamp`, `x-signature` и `x-panel-uuid`.\n- Агент применяет блокировку связанной панели, проверку актуальности запроса, защиту от повторного воспроизведения (replay), лимиты частоты запросов (rate limits) и политику аудита перед отправкой привилегированных вызовов.\n- Спаривание (pairing) и стандартные проверки здоровья gRPC являются исключениями для начальной загрузки (bootstrap) и проверки работоспособности (liveness). Не реализуйте клиент только на основе этого документа; используйте поддерживаемый транспорт Panel или сгенерированную интеграцию protobuf."
+    },
+    "20d1cf38ad2c402849716a3784bcdc83ab88eac4ee35a56f2f7ead967757a2c2": {
+      "source": "content/novus-os/agent-core-getting-started/getting-started-readme.en.md",
+      "locale": "uk",
+      "translation": "Початок роботи з NOVUS Agent"
+    },
+    "e207b5820984ea3d8123888c833f7852549a086e840af73cf0988119f35cfd2b": {
+      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
+      "locale": "uk",
+      "translation": "Маніфест екосистеми NOVUS-OS"
+    },
+    "864671d15cb81e65edcab7c035ff927a2d2ef336805ca2557321982ea88b8afc": {
+      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
+      "locale": "uk",
+      "translation": "**Status:** нормативний міжрепозиторний архітектурний контракт **Scope:** panel-core, agent-core, and installer **Canonical source:** цей документ створено в panel-core/docs/..."
+    },
+    "8c552d2a3100936ef2e9980709b07ab78fd1d37d8eaa4656fb4e0964bb8599c9": {
+      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
+      "locale": "uk",
+      "translation": "# Маніфест екосистеми NOVUS-OS\n\n**Статус:** нормативний міжрепозиторний архітектурний контракт  \n**Область застосування:** `panel-core`, `agent-core` та `installer`  \n**Канонічне джерело:** цей документ створено у `panel-core/docs/architecture/` та синхронізовано досліввно до кореня кожного репозиторію.\n\n## 1. Бачення продукту та архітектурна філософія\n\nNOVUS-OS — це Web-OS для керування керованою інфраструктурою через єдину контрольну поверхню, нативну для браузера. Вона замінює фрагментовані зовнішні інструменти адміністрування, такі як WinSCP та PuTTY, на робочі процеси з перевіркою прав: керування файлами, доступ до термінала, життєвий цикл служб та контейнерів, мережі, резервні копії, вебсайти, бази даних, телеметрія та адміністрування безпеки.\n\nПродукт має два взаємодоповнювальні режими інтерфейсу користувача:\n\n| Режим | Призначення |\n| --- | --- |\n| **Dashboard** | Швидкий операційний огляд: стан здоров'я, телеметрія, сповіщення, черги, інвентаризація та високочастотні дії. |\n| **WebDesktop** | Постійний робочий простір з кількома інструментами для автентифікованих операторів, з маршрутизованими панелями для файлів, терміналів, екземплярів, вебсайтів, баз даних та адміністрування. |\n\nФронтенд є браузерним додатком з оболонкою, хеш-маршрутизацією, ледаче завантажуваними функціональними модулями Vue, спільними службами середовища виконання UI, i18n та підтримкою життєвого циклу PWA. PWA є властивістю доставки та стійкості панелі UI; він ніколи не передає повноваження хоста браузеру.\n\nАрхітектура дотримується суворого розділення на Control-Plane, Data-Plane та завантаження (bootstrap):\n\n1. Панель вирішує, *хто може що запитувати*, зберігає намір та стан, а також представляє результати.\n2. Agent виконує привілейовану локальну роботу на хості лише після автентифікованого транспортного запиту.\n3. Installer готує хост один раз, передає постійне володіння Panel та Agent, а потім видаляє власну завантажувальну поверхню."
+    },
+    "4c5204ea16fdebbca206872d1973280900718e4b31a416dcbc9f12ee84263124": {
+      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
+      "locale": "uk",
+      "translation": "## 2. Матриця тристоронніх меж\n\n| Репозиторій / роль | Дозволено та належить | Суворо заборонено |\n| --- | --- | --- |\n| **`panel-core` - Мозок / Control-Plane** | PHP-додаток, Vue/PWA UI, стан продукту на базі PostgreSQL, оцінка політик IAM/OIM, маршрутизація API, оркестрація, журнали аутентифікації/аудиту, наміри команд, метадані з'єднань, бізнес-правила та представлення результатів Agent. | Пряме адміністрування хоста на рівні root; пряме використання Docker socket; пряма мутація файлової системи хоста; володіння локальним PTY; вбудовування привілейованих робочих процесів Bash або `sudo` як заміна Agent RPC. Новий код повинен використовувати фасад Agent та типизовані транспортні контракти. |\n| **`agent-core` - Руки і ноги / Data-Plane** | Довготривалий демон на Go, автентифіковані службі gRPC, зонди хоста, операції з Docker та системою, примусове застосування VFS, операції з файловою системою контейнерів, потокове передавання PTY, збір телеметрії та керування канонічними томами екземплярів. | Веб-інтерфейс, сеансові потоки / потоки автентифікації браузера, рішення щодо політик IAM/OIM продукту, стан control-plane PostgreSQL, оркестрація бізнес-процесів або пряме зв'язування з внутрішніми компонентами Panel та схемою бази даних. |\n| **`installer` - Ефемерний бутстрапер** | Перевірка перед запуском виключно для root, встановлення залежностей, завантаження та перевірка версій артефактів випусків, початкове розгортання / конфігурація, початкові секрети / маніфест бутстрапу, прогрес встановлення в терміналі та перевірка працездатності після встановлення. | Перетворення на постійну службу, виконання ролі середовища виконання Panel, збереження облікових даних користувача після завершення, реалізація поточних операцій життєвого циклу хоста або залишення на успішному робочому хості. |"
+    },
+    "5519ea15a3bfa2f22db0ad14b7465a3d2cab3130406f20e2da6da33ace54f6d1": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "uk",
+      "translation": "Звіт про бюджет бандла фронтенду"
+    },
+    "e468db90d300596a73773264b2a4232c3bf0692a9ab27889ff6853c0f0ce9e9a": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "uk",
+      "translation": "Загальний статус: PASS Статус панелі приладів: FAIL"
+    },
+    "d3b683e5a25ebfc65df26945ef8d12d35a55b7f47c55df0abe3280563218bb70": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "uk",
+      "translation": "# Звіт про бюджет фронтенд-бандла\n\nЗагальний статус: PASS\nСтатус панелі приладів: FAIL\n\n## Джерела\n\n- Маніфест: /tmp/novus-panel-build/manifest.json\n- Базовий показник: tools/quality/frontend_bundle_budget_baseline.json\n- Історія: docs/architecture/frontend_bundle_budget_history.json\n- Відсоток запасу: 10\n- Історичні знімки: 8\n\n## Глобальні метрики\n\n| Метрика | Поточне | Ліміт | Використання | Статус |\n|---|---:|---:|---:|---|\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | PASS |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | PASS |\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | PASS |\n\n## Бюджети вхідних файлів JS\n\n| Метрика | Поточне | Ліміт | Використання | Статус |\n|---|---:|---:|---:|---|\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | PASS |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | PASS |"
+    },
+    "94a5892d66d6d5d9d0cddba488155c4f1dfca5c37ed38dfa086b253b50956cb6": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "uk",
+      "translation": "## Бюджети CSS для точок входу\n\n| Метрика | Поточне | Ліміт | Використання | Статус |\n|---|---:|---:|---:|---|\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | PASS |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | PASS |\n\n## Панель запасу бюджетів\n\n| Метрика | Поточне | Ліміт | Використання | Залишок запасу | Ризик |\n|---|---:|---:|---:|---:|---|\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | +3.52 KiB (+3601) | CRITICAL |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | +1.70 KiB (+1738) | WATCH |\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | +5.21 KiB (+5336) | WATCH |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | +19.25 KiB (+19711) | WATCH |\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | +20.71 KiB (+21202) | WATCH |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | +22.31 KiB (+22848) | WATCH |\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | +1.18 MiB (+1241229) | OK |\n\n- Порогові значення ризику використання: WATCH >= 92% · CRITICAL >= 98%\n- Метрик у стані WATCH/CRITICAL: 6\n- Метрик з недійсними лімітами: 0"
+    },
+    "d6659bce79becabcf8440f0e39fb4ffcddfe144968a3d93f2a2956d6b43169c8": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "uk",
+      "translation": "## Сигнали зростання (Дельта останнього знімка)\n\n- Поточний коміт знімка: 45dee3385fb1\n- Попередній коміт знімка: 58ca53a5af1c\n| Метрика | Попередній | Поточний | Дельта | Дельта % | Поріг попередження | Поріг помилки | Сигнал |\n|---|---:|---:|---:|---:|---:|---:|---|\n| totalJsBytes | 4.73 MiB (4956212) | 3.98 MiB (4169148) | -787064 B (-787064) | -15.88% | 3% | 8% | OK |\n| totalCssBytes | 329.79 KiB (337706) | 337.02 KiB (345107) | +7.23 KiB (+7401) | +2.19% | 3% | 8% | OK |\n| largestJsBytes | 815.45 KiB (835021) | 893.07 KiB (914508) | +77.62 KiB (+79487) | +9.52% | 3% | 8% | FAIL |\n\n- Пороги зростання: WARN > 3% · FAIL > 8%\n- Попередження/помилки зростання: 1\n\n## Топ-12 JS-ресурсів\n\n| # | Ресурс | Розмір |\n|---:|---|---:|\n| 1 | assets/module-scheduler-CZur5sqe.js | 893.07 KiB (914508) |\n| 2 | assets/module-overview-mLB4L4ac.js | 493.69 KiB (505538) |\n| 3 | assets/module-bots-1oNhRVRo.js | 410.38 KiB (420229) |\n| 4 | assets/route-terminal-COvZnTO6.js | 384.14 KiB (393364) |\n| 5 | assets/module-services-ui-BTqkrwWW.js | 257.48 KiB (263656) |\n| 6 | assets/module-services-overlays-rX1BL-bO.js | 189.08 KiB (193618) |\n| 7 | assets/module-services-detail-tabs-CLG5LMCN.js | 126.85 KiB (129899) |\n| 8 | assets/module-matrices-CsV0k3rV.js | 124.09 KiB (127073) |\n| 9 | assets/module-websites-Bp8IJbaF.js | 122.24 KiB (125174) |\n| 10 | assets/module-profile-DmMj6HaN.js | 117.77 KiB (120593) |\n| 11 | assets/module-files-Dj_-xuZ0.js | 105.26 KiB (107783) |\n| 12 | assets/app-CaNKTWnY.js | 99.29 KiB (101675) |"
+    },
+    "3ae786f09e997d06ecdaba84a8dfc9a0ad6a9533b7c9409a0196265397e4026c": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "ru",
+      "translation": "Отчет о бюджете бандла фронтенда"
+    },
+    "439b935910f2dc9e3f0b3f78f09ed30adbdd8d726d1a1b838d2de2df676e6cb5": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "ru",
+      "translation": "Общий статус: PASS Статус панели управления: FAIL"
+    },
+    "4cab41abc8d55e0541658e444a6f71ce653d4408b766d93f6a8a3ad61831dcde": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "ru",
+      "translation": "# Отчет о бюджете фронтенд-бандла\n\nОбщий статус: PASS\nСтатус дашборда: FAIL\n\n## Источники\n\n- Манифест: /tmp/novus-panel-build/manifest.json\n- Базовая линия: tools/quality/frontend_bundle_budget_baseline.json\n- История: docs/architecture/frontend_bundle_budget_history.json\n- Процент запаса: 10\n- Исторические снимки: 8\n\n## Глобальные метрики\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | PASS |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | PASS |\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | PASS |\n\n## Бюджеты JS-точек входа\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | PASS |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | PASS |"
+    },
+    "733c284f6f577846f7fe274e618a7b499f2cddc8cb0efe12a5453dc6b9abb8b9": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "ru",
+      "translation": "## Бюджеты CSS точек входа\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | PASS |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | PASS |\n\n## Дашборд запаса бюджетов\n\n| Метрика | Текущее | Лимит | Использование | Оставшийся запас | Риск |\n|---|---:|---:|---:|---:|---|\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | +3.52 KiB (+3601) | CRITICAL |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | +1.70 KiB (+1738) | WATCH |\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | +5.21 KiB (+5336) | WATCH |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | +19.25 KiB (+19711) | WATCH |\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | +20.71 KiB (+21202) | WATCH |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | +22.31 KiB (+22848) | WATCH |\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | +1.18 MiB (+1241229) | OK |\n\n- Пороговые значения риска использования: WATCH >= 92% · CRITICAL >= 98%\n- Метрик в состоянии WATCH/CRITICAL: 6\n- Метрик с недействительными лимитами: 0"
+    },
+    "823962d7c31d7774965334aadf9286c9d37e4b3982c5172bfdd1f3c41a4791eb": {
+      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
+      "locale": "ru",
+      "translation": "## Сигналы роста (Дельта последнего снимка)\n\n- Коммит текущего снимка: 45dee3385fb1\n- Коммит предыдущего снимка: 58ca53a5af1c\n| Метрика | Предыдущий | Текущий | Дельта | Дельта % | Порог предупреждения | Порог сбоя | Сигнал |\n|---|---:|---:|---:|---:|---:|---:|---|\n| totalJsBytes | 4.73 MiB (4956212) | 3.98 MiB (4169148) | -787064 B (-787064) | -15.88% | 3% | 8% | OK |\n| totalCssBytes | 329.79 KiB (337706) | 337.02 KiB (345107) | +7.23 KiB (+7401) | +2.19% | 3% | 8% | OK |\n| largestJsBytes | 815.45 KiB (835021) | 893.07 KiB (914508) | +77.62 KiB (+79487) | +9.52% | 3% | 8% | FAIL |\n\n- Пороги роста: WARN > 3% · FAIL > 8%\n- Предупреждения/сбои роста: 1\n\n## Топ-12 JS-ресурсов\n\n| # | Ресурс | Размер |\n|---:|---|---:|\n| 1 | assets/module-scheduler-CZur5sqe.js | 893.07 KiB (914508) |\n| 2 | assets/module-overview-mLB4L4ac.js | 493.69 KiB (505538) |\n| 3 | assets/module-bots-1oNhRVRo.js | 410.38 KiB (420229) |\n| 4 | assets/route-terminal-COvZnTO6.js | 384.14 KiB (393364) |\n| 5 | assets/module-services-ui-BTqkrwWW.js | 257.48 KiB (263656) |\n| 6 | assets/module-services-overlays-rX1BL-bO.js | 189.08 KiB (193618) |\n| 7 | assets/module-services-detail-tabs-CLG5LMCN.js | 126.85 KiB (129899) |\n| 8 | assets/module-matrices-CsV0k3rV.js | 124.09 KiB (127073) |\n| 9 | assets/module-websites-Bp8IJbaF.js | 122.24 KiB (125174) |\n| 10 | assets/module-profile-DmMj6HaN.js | 117.77 KiB (120593) |\n| 11 | assets/module-files-Dj_-xuZ0.js | 105.26 KiB (107783) |\n| 12 | assets/app-CaNKTWnY.js | 99.29 KiB (101675) |"
+    },
+    "1509c02700fb80aef5615da9960c20bae057477af58d38b0a794014337ad3db5": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "uk",
+      "translation": "Повний перелік сервісів"
+    },
+    "f4e11787d0c6c3c0aea1b994a9f3eea0249d41e3cc51370b1fa550b2d3903bfa": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "uk",
+      "translation": "Автоматично згенерований інвентар класів/інтерфейсів/трейтів `app/Services` та їхніх публічних методів."
+    },
+    "c27d8c395bfb4231dedc0bbfbea31a5a3edb3f72f33ffb945712932df31c7665": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "uk",
+      "translation": "# Повний інвентар сервісів\n\nАвтоматично згенерований інвентар класів/інтерфейсів/трейтів app/Services та їхніх публічних методів.\n\n- Джерело: app/Services\n- Всього записів: 213\n\n## App\\Services\\Access\\ApiKeyService\n\n- Вид: class\n- Файл: app/Services/Access/ApiKeyService.php\n- Публічні методи: __construct(), generate(), validate(), listForUser(), revoke(), delete()\n\n## App\\Services\\Access\\ApiKeyValidatorInterface\n\n- Вид: interface\n- Файл: app/Services/Access/ApiKeyValidatorInterface.php\n- Публічні методи: validate()\n\n## App\\Services\\Access\\AuthService\n\n- Вид: class\n- Файл: app/Services/Access/AuthService.php\n- Публічні методи: __construct(), login(), me(), logout()\n\n## App\\Services\\Access\\IamService\n\n- Вид: class\n- Файл: app/Services/Access/IamService.php\n- Публічні методи: __construct(), overview(), role(), createRole(), updateRole(), deleteRole(), togglePermission()\n\n## App\\Services\\Access\\IdentityIntegrationInterface\n\n- Вид: interface\n- Файл: app/Services/Access/IdentityIntegrationInterface.php\n- Публічні методи: apply()"
+    },
+    "7c357919477a74d7cbcd850a25e4a5b71daae80b101a2b01b61411cdfb6d1974": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "ru",
+      "translation": "Полный инвентарь сервисов"
+    },
+    "7a7c41114f58fb14a13b41397060d11827161ca90be797e85e6ad49e2ede238e": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "ru",
+      "translation": "Автоматически сгенерированный реестр классов/интерфейсов/трейтов app/Services и их публичных методов."
+    },
+    "fdde539592ed5fa5819b24e77bd804b49f29affd5001ed3b9575b12d2358c1a3": {
+      "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
+      "locale": "ru",
+      "translation": "# Полный реестр сервисов\n\nАвтоматически сгенерированный реестр классов, интерфейсов и трейтов из app/Services и их публичных методов.\n\n- Источник: app/Services\n- Всего элементов: 213\n\n## App\\Services\\Access\\ApiKeyService\n\n- Тип: class\n- Файл: app/Services/Access/ApiKeyService.php\n- Публичные методы: __construct(), generate(), validate(), listForUser(), revoke(), delete()\n\n## App\\Services\\Access\\ApiKeyValidatorInterface\n\n- Тип: interface\n- Файл: app/Services/Access/ApiKeyValidatorInterface.php\n- Публичные методы: validate()\n\n## App\\Services\\Access\\AuthService\n\n- Тип: class\n- Файл: app/Services/Access/AuthService.php\n- Публичные методы: __construct(), login(), me(), logout()\n\n## App\\Services\\Access\\IamService\n\n- Тип: class\n- Файл: app/Services/Access/IamService.php\n- Публичные методы: __construct(), overview(), role(), createRole(), updateRole(), deleteRole(), togglePermission()\n\n## App\\Services\\Access\\IdentityIntegrationInterface\n\n- Тип: interface\n- Файл: app/Services/Access/IdentityIntegrationInterface.php\n- Публичные методы: apply()"
+    },
+    "8ecc07c17f50e20c1a2414105d5a8acfe43cd67892613a14186b5a244f6e5bf6": {
+      "source": "content/novus-os/panel-core-getting-started/getting-started-readme.en.md",
+      "locale": "uk",
+      "translation": "Початок роботи з NOVUS-OS Panel"
+    },
+    "b91cc5cf3cf9ef45bcaed41c05f40c3f3f0443f33c53f3b44a8640111c299519": {
+      "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
+      "locale": "uk",
+      "translation": "Інструкція"
+    },
+    "f34e33700ddb39f48793c41484db6e62ee20be68fb053f32457a38459ef80136": {
+      "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
+      "locale": "uk",
+      "translation": "Посібник для адміністраторів і операторів панелі."
+    },
+    "cb176c58c5793566255e69d1993d4deef3573db1a451d8c68e0d092d235b71d4": {
+      "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
+      "locale": "uk",
+      "translation": "# Manual\n\nПосібник для адміністраторів та операторів панелі.\n\nManual охоплює продуктові та операційні сценарії. Машинно-генеровані technical inventories винесено в окремі технічні розділи.\n\n## Infrastructure\n\n- [infrastructure/nodes.md](infrastructure/nodes.md)\n- [infrastructure/instances.md](infrastructure/instances.md)\n- [infrastructure/network.md](infrastructure/network.md)\n- [infrastructure/vfs.md](infrastructure/vfs.md)\n- [infrastructure/network_channels.md](infrastructure/network_channels.md)\n- [infrastructure/matrices.md](infrastructure/matrices.md)\n- [infrastructure/novus_agent_client.md](infrastructure/novus_agent_client.md)"
+    },
+    "f7439bb4bd05b45f393167ad738d1b829ff023bca78dfa3a11ecf1c3ba57c588": {
+      "source": "content/novus-os/panel-core-security/security-hardening-guide.en.md",
+      "locale": "ru",
+      "translation": "Безопасность операций платформы"
     }
   }
 }
