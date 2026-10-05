@@ -45,7 +45,8 @@ Incremental translation mode:
 - Pending locale files are prioritized first, then missing/stale locales.
 - Set `TRANSLATION_MAX_DOCS_PER_RUN=0` for unlimited translation in one run.
 - Completed fields and body chunks are checkpointed in `.tmp/translation-progress.json`. If every model is out of quota, the workflow saves those checkpoints and the next scheduled run resumes without retranslating completed chunks.
-- Gemini request pacing reads each configured model's RPM, TPM, and RPD limits, tracks daily requests across workflow runs in `.tmp/gemini-usage.json`, and prefers models with more remaining daily capacity. API model input/output token limits are also checked before generation; RPM and TPM windows are paced rather than burst-called.
+- Gemini respects the model order in `config/locales.json`, tracks this repository's requests across workflow runs in `.tmp/gemini-usage.json`, and moves to the next model when the current model's configured RPM, TPM, or RPD budget is unavailable. Before sending a request, it reserves a conservative input/output token budget; model context limits are also checked using Gemini API metadata when available.
+- Gemini's quotas apply to the API project/key, not just this repository. Other applications using the same key can consume shared capacity; Gemini's 429 response is treated as authoritative and blocks that model for the applicable quota window.
 - When the full model cascade is exhausted, translation pauses with a warning instead of failing the workflow; completed content and checkpoints are committed, and the next scheduled run resumes.
 - Catalog export excludes pending, empty, untranslated, and materially incomplete RU/UK documents.
 - Site import is held until both RU and UK catalogs contain validated translations for every English document, preventing an incomplete catalog from replacing the live database.
@@ -102,8 +103,8 @@ Current cascade:
 | `gemini-3.8-flash` | 5 | 250,000 | 20 |
 | `gemini-3.7-flash` | 5 | 250,000 | 20 |
 | `gemini-3.6-flash` | 5 | 250,000 | 20 |
-| `gemini-3.5-flash-lite` | 15 | 250,000 | 500 |
 | `gemini-3.5-flash` | 5 | 250,000 | 20 |
+| `gemini-3.5-flash-lite` | 15 | 250,000 | 500 |
 
 The limits above are configured from the current AI Studio free-tier quota view and can change independently per project/model. `TPM` is the rolling token-throughput quota, not the model's maximum context window; context input/output limits are read from the Gemini model metadata API when available.
 
@@ -112,7 +113,7 @@ Localization failure policy:
 - This prevents publishing `*.ru.md` / `*.uk.md` files that contain English text when Gemini is temporarily unavailable.
 - Optional legacy behavior can be re-enabled with `TRANSLATION_ALLOW_PENDING_FALLBACK=true`.
 - Workflow uses `cancel-in-progress: true` and a job timeout to avoid stale localization runs blocking newer fixes.
-- If localization cannot finish, the workflow still commits completed translations and checkpoints, imports only validated catalog entries, then reports the run as failed so a later scheduled run can resume.
+- If every configured model is blocked by quota, the workflow saves completed translations and checkpoints and pauses with a warning. It does not import incomplete catalogs; a later scheduled run can resume from the saved progress.
 
 ## Gemini Smoke Check
 
