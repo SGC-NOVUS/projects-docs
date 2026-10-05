@@ -51,6 +51,7 @@ DEFAULT_GEMINI_MODEL_FALLBACKS = [
 
 TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
 TRANSLATION_PROGRESS_VERSION = 1
+MAX_GEMINI_REQUESTS_PER_MINUTE = 15
 
 
 class GeminiQuotaExhaustedError(RuntimeError):
@@ -164,6 +165,7 @@ class GeminiQuotaTracker:
         self.blocked_until: Dict[str, float] = {}
         self.daily_blocked: set[str] = set()
         self.events: Dict[str, List[Dict[str, float]]] = {}
+        self.global_events: List[float] = []
         if not path.exists():
             return
 
@@ -202,6 +204,19 @@ class GeminiQuotaTracker:
             for key, value in events.items()
             if isinstance(value, list)
         }
+        global_events = data.get("global_events")
+        if isinstance(global_events, list):
+            self.global_events = [
+                float(event_at)
+                for event_at in global_events
+                if now - float(event_at) < 60
+            ]
+        else:
+            self.global_events = [
+                event["at"]
+                for model_events in self.events.values()
+                for event in model_events
+            ]
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -212,6 +227,7 @@ class GeminiQuotaTracker:
             "blocked_until": self.blocked_until,
             "daily_blocked": sorted(self.daily_blocked),
             "events": self.events,
+            "global_events": self.global_events,
         }
         temporary_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -256,10 +272,25 @@ class GeminiQuotaTracker:
                 f"request reserves {estimated_tokens})"
             )
 
+        while True:
+            self.global_events[:] = [
+                event_at for event_at in self.global_events if now - event_at < 60
+            ]
+            if len(self.global_events) < MAX_GEMINI_REQUESTS_PER_MINUTE:
+                return
+            delay = max(0.1, self.global_events[0] + 60 - now + 0.1)
+            print(
+                f"Global quota pacing: waiting {delay:.1f}s "
+                f"(limit={MAX_GEMINI_REQUESTS_PER_MINUTE} requests per minute)"
+            )
+            time.sleep(delay)
+            now = time.time()
+
     def record_attempt(self, model: str, estimated_tokens: int) -> None:
         now = time.time()
         self.calls[model] = self.calls.get(model, 0) + 1
         self.events.setdefault(model, []).append({"at": now, "tokens": float(estimated_tokens)})
+        self.global_events.append(now)
         self.save()
 
     def record_usage(self, model: str, actual_tokens: int) -> None:

@@ -149,6 +149,45 @@ class GeminiCascadeTests(unittest.TestCase):
             with self.assertRaisesRegex(translate.GeminiQuotaUnavailableError, "RPM quota"):
                 tracker.prepare_request("gemini-flash", 20)
 
+    def test_global_rpm_limit_paces_requests_across_models(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {
+                    "model-a": {"rpm": 15, "tpm": 250000, "rpd": 500},
+                    "model-b": {"rpm": 15, "tpm": 250000, "rpd": 500},
+                },
+            )
+            with patch.object(translate.time, "time", return_value=100):
+                for index in range(translate.MAX_GEMINI_REQUESTS_PER_MINUTE):
+                    tracker.record_attempt("model-a" if index % 2 else "model-b", 20)
+
+            with (
+                patch.object(translate.time, "time", side_effect=[100, 160.1]),
+                patch.object(translate.time, "sleep") as sleep,
+            ):
+                tracker.prepare_request("model-a", 20)
+
+            sleep.assert_called_once()
+            self.assertGreaterEqual(sleep.call_args.args[0], 60)
+            self.assertLess(len(tracker.global_events), translate.MAX_GEMINI_REQUESTS_PER_MINUTE)
+
+    def test_global_rpm_history_is_restored_from_usage_state(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = pathlib.Path(temporary_directory) / "usage.json"
+            tracker = translate.GeminiQuotaTracker(
+                path,
+                {"gemini-flash": {"rpm": 15, "tpm": 250000, "rpd": 500}},
+            )
+            with patch.object(translate.time, "time", return_value=100):
+                tracker.record_attempt("gemini-flash", 20)
+                resumed = translate.GeminiQuotaTracker(
+                    path,
+                    {"gemini-flash": {"rpm": 15, "tpm": 250000, "rpd": 500}},
+                )
+
+        self.assertEqual(resumed.global_events, [100])
+
     def test_tpm_quota_prevents_request_that_would_exceed_limit(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             tracker = translate.GeminiQuotaTracker(
