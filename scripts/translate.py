@@ -11,6 +11,7 @@ Auto-localize changed English docs using Gemini.
 from __future__ import annotations
 
 import difflib
+import hashlib
 import json
 import os
 import pathlib
@@ -48,6 +49,11 @@ DEFAULT_GEMINI_MODEL_FALLBACKS = [
 ]
 
 TRANSIENT_HTTP_STATUSES = {429, 500, 502, 503, 504}
+TRANSLATION_PROGRESS_VERSION = 1
+
+
+class GeminiQuotaExhaustedError(RuntimeError):
+    pass
 
 
 @dataclass
@@ -60,6 +66,86 @@ class DocParts:
 class GeminiModelInfo:
     name: str
     supported_methods: List[str]
+
+
+class TranslationProgress:
+    def __init__(self, path: pathlib.Path):
+        self.path = path
+        self.entries: Dict[str, Dict[str, str]] = {}
+        if not path.exists():
+            return
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"unable to read translation progress file {path}: {exc}") from exc
+
+        if not isinstance(data, dict) or data.get("version") != TRANSLATION_PROGRESS_VERSION:
+            raise RuntimeError(f"unsupported translation progress format: {path}")
+        entries = data.get("entries")
+        if not isinstance(entries, dict):
+            raise RuntimeError(f"invalid translation progress entries: {path}")
+        for key, value in entries.items():
+            if (
+                not isinstance(key, str)
+                or not isinstance(value, dict)
+                or not isinstance(value.get("translation"), str)
+                or not isinstance(value.get("source"), str)
+                or not isinstance(value.get("locale"), str)
+            ):
+                raise RuntimeError(f"invalid translation progress entry in {path}")
+        self.entries = entries
+
+    @staticmethod
+    def key(
+        source: str,
+        source_hash: str,
+        locale: str,
+        scope: str,
+        segment: str,
+        text: str,
+        glossary_hash: str,
+    ) -> str:
+        key_data = [source, source_hash, locale, scope, segment, text, glossary_hash]
+        encoded = json.dumps(key_data, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        return hashlib.sha256(encoded).hexdigest()
+
+    def get(self, key: str) -> str | None:
+        entry = self.entries.get(key)
+        return str(entry["translation"]) if entry else None
+
+    def set(self, key: str, source: str, locale: str, translation: str) -> None:
+        self.entries[key] = {
+            "source": source,
+            "locale": locale,
+            "translation": translation,
+        }
+        self.save()
+
+    def clear_document_locale(self, source: str, locale: str) -> None:
+        self.entries = {
+            key: value
+            for key, value in self.entries.items()
+            if value.get("source") != source or value.get("locale") != locale
+        }
+        self.save()
+
+    def save(self) -> None:
+        if not self.entries:
+            self.path.unlink(missing_ok=True)
+            return
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = self.path.with_suffix(self.path.suffix + ".tmp")
+        payload = {
+            "version": TRANSLATION_PROGRESS_VERSION,
+            "entries": self.entries,
+        }
+        temporary_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        temporary_path.replace(self.path)
 
 
 def run(cmd: List[str]) -> str:
@@ -210,8 +296,10 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
     out = str(translated_text or "")
     src_n = _normalize_text_for_compare(src)
     out_n = _normalize_text_for_compare(out)
-    if not src_n or not out_n:
+    if not src_n:
         return False
+    if not out_n:
+        return True
 
     src_latin = _count_latin(src)
     src_cyr = _count_cyrillic(src)
@@ -231,7 +319,12 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
     prose = _translation_prose(out)
     prose_letters = _count_latin(prose) + _count_cyrillic(prose)
     prose_cyrillic = _count_cyrillic(prose)
-    if prose_letters >= 80 and prose_cyrillic / prose_letters < 0.12:
+    if prose_letters >= 80 and prose_cyrillic / prose_letters < 0.25:
+        return True
+
+    source_prose = _translation_prose(src)
+    source_prose_letters = _count_latin(source_prose) + _count_cyrillic(source_prose)
+    if source_prose_letters >= 250 and prose_letters < int(source_prose_letters * 0.45):
         return True
 
     # Body check is intentionally conservative to avoid false positives on code-heavy docs.
@@ -588,7 +681,11 @@ def gemini_translate(
                 time.sleep(delay)
                 continue
 
-            if resp.status_code in TRANSIENT_HTTP_STATUSES and attempt < max_retries:
+            if (
+                resp.status_code in TRANSIENT_HTTP_STATUSES
+                and attempt < max_retries
+                and resp.status_code != 429
+            ):
                 delay = retry_base_seconds * (2 ** attempt)
                 print(
                     f"WARN: Gemini model '{model}' returned HTTP {resp.status_code}; retrying in {delay:.1f}s",
@@ -609,13 +706,7 @@ def gemini_translate(
             except Exception:
                 detail = resp.text.strip()
 
-            detail_l = detail.lower()
-            if resp.status_code == 429 and (
-                "quota" in detail_l
-                or "billing" in detail_l
-                or "resource_exhausted" in detail_l
-                or "rate" in detail_l
-            ):
+            if resp.status_code == 429:
                 short_detail = detail[:180] if detail else "quota/rate exhausted"
                 if idx < len(models) - 1:
                     print(
@@ -624,7 +715,7 @@ def gemini_translate(
                     )
                     last_error = f"{model}: HTTP 429 {short_detail}"
                     continue
-                raise RuntimeError(f"gemini quota/rate exhausted: {short_detail}")
+                raise GeminiQuotaExhaustedError(f"gemini quota/rate exhausted: {short_detail}")
 
             can_retry_with_next = resp.status_code in TRANSIENT_HTTP_STATUSES and idx < len(models) - 1
             if can_retry_with_next:
@@ -677,6 +768,8 @@ def gemini_translate(
 
         return text_out, model
 
+    if last_error and "HTTP 429" in last_error:
+        raise GeminiQuotaExhaustedError(f"all Gemini model candidates exhausted: {last_error}")
     if last_error:
         raise RuntimeError(f"all Gemini model candidates failed; last error: {last_error}")
     raise RuntimeError("all Gemini model candidates failed")
@@ -855,59 +948,18 @@ def main() -> int:
             print(f"Switched Gemini model: {used_model}")
         return translated
 
-    def translate_body(text: str, locale: str) -> str:
-        def translate_chunk(chunk_text: str, chunk_chars: int, depth: int = 0) -> str:
-            try:
-                return translate_text(chunk_text, locale, "body")
-            except Exception as exc:
-                if depth >= 3 or len(chunk_text) < 600:
-                    raise
-
-                next_chars = max(1000, min(chunk_chars // 2, len(chunk_text) // 2))
-                subchunks = split_markdown_translation_chunks(chunk_text, next_chars)
-                if len(subchunks) <= 1:
-                    raise
-
-                print(
-                    f"WARN: body chunk translation failed for locale {locale} ({exc}); retrying with smaller chunks ({len(subchunks)} chunk(s), depth={depth + 1})",
-                    file=sys.stderr,
-                )
-
-                translated_subchunks: List[str] = []
-                for subchunk in subchunks:
-                    translated_subchunks.append(translate_chunk(subchunk, next_chars, depth + 1).strip("\n"))
-
-                return "\n\n".join(translated_subchunks).strip()
-
-        chunks = split_markdown_translation_chunks(text, body_chunk_chars)
-        if len(chunks) <= 1:
-            return translate_chunk(text, body_chunk_chars)
-
-        translated_chunks: List[str] = []
-        total = len(chunks)
-        for idx, chunk in enumerate(chunks, start=1):
-            translated_chunk = translate_chunk(chunk, body_chunk_chars)
-            translated_chunks.append(translated_chunk.strip("\n"))
-            print(f"Translated body chunk {idx}/{total} for locale {locale}")
-
-        return "\n\n".join(translated_chunks).strip()
-
-    def translate_optional_field(text: str, locale: str, scope: str) -> str:
-        try:
-            return translate_text(text, locale, scope)
-        except Exception as exc:
-            if strict_translation:
-                raise
-            raise RuntimeError(
-                f"{scope} translation failed for locale {locale}; refusing mixed-language output: {exc}"
-            ) from exc
-
     TMP_DIR.mkdir(parents=True, exist_ok=True)
+    progress = TranslationProgress(TMP_DIR / "translation-progress.json")
+    glossary_hash = hashlib.sha256(
+        json.dumps(protected_terms, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
     localized_written: List[pathlib.Path] = []
 
     for source in changed_en:
         parts = parse_markdown_doc(source)
+        source_name = relative(source)
+        source_hash = hashlib.sha256(source.read_bytes()).hexdigest()
 
         title_en = str(parts.frontmatter.get("title", ""))
         description_en = str(parts.frontmatter.get("description", ""))
@@ -917,9 +969,95 @@ def main() -> int:
             locale = str(locale)
             out_path = localized_path(source, locale)
 
+            def translate_cached(text: str, scope: str, segment: str) -> str:
+                key = progress.key(
+                    source_name,
+                    source_hash,
+                    locale,
+                    scope,
+                    segment,
+                    text,
+                    glossary_hash,
+                )
+                cached = progress.get(key)
+                if cached is not None:
+                    print(f"resumed {scope} translation: {source_name} ({locale}, {segment})")
+                    return cached
+
+                translated = translate_text(text, locale, scope)
+                progress.set(key, source_name, locale, translated)
+                return translated
+
             try:
-                translated_title = translate_optional_field(title_en, locale, "title")
-                translated_description = translate_optional_field(description_en, locale, "description")
+                translated_title = translate_cached(title_en, "title", "title")
+                translated_description = translate_cached(description_en, "description", "description")
+
+                def translate_body(text: str, target_locale: str) -> str:
+                    def translate_chunk(
+                        chunk_text: str,
+                        chunk_chars: int,
+                        segment: str,
+                        depth: int = 0,
+                    ) -> str:
+                        key = progress.key(
+                            source_name,
+                            source_hash,
+                            target_locale,
+                            "body",
+                            segment,
+                            chunk_text,
+                            glossary_hash,
+                        )
+                        cached = progress.get(key)
+                        if cached is not None:
+                            print(
+                                f"resumed body translation: {source_name} "
+                                f"({target_locale}, {segment})"
+                            )
+                            return cached
+
+                        try:
+                            translated = translate_text(chunk_text, target_locale, "body")
+                        except GeminiQuotaExhaustedError:
+                            raise
+                        except Exception as exc:
+                            if depth >= 3 or len(chunk_text) < 600:
+                                raise
+
+                            next_chars = max(1000, min(chunk_chars // 2, len(chunk_text) // 2))
+                            subchunks = split_markdown_translation_chunks(chunk_text, next_chars)
+                            if len(subchunks) <= 1:
+                                raise
+
+                            print(
+                                f"WARN: body chunk translation failed for locale {target_locale} "
+                                f"({exc}); retrying with smaller chunks "
+                                f"({len(subchunks)} chunk(s), depth={depth + 1})",
+                                file=sys.stderr,
+                            )
+                            translated_subchunks = [
+                                translate_chunk(
+                                    subchunk,
+                                    next_chars,
+                                    f"{segment}.{idx}",
+                                    depth + 1,
+                                ).strip("\n")
+                                for idx, subchunk in enumerate(subchunks)
+                            ]
+                            translated = "\n\n".join(translated_subchunks).strip()
+
+                        progress.set(key, source_name, target_locale, translated)
+                        return translated
+
+                    chunks = split_markdown_translation_chunks(text, body_chunk_chars)
+                    translated_chunks = [
+                        translate_chunk(chunk, body_chunk_chars, f"body.{idx}").strip("\n")
+                        for idx, chunk in enumerate(chunks)
+                    ]
+                    if len(chunks) > 1:
+                        print(f"Translated body chunks ({len(chunks)}) for locale {target_locale}")
+                    return "\n\n".join(translated_chunks).strip()
+
                 translated_body = translate_body(body_en, locale)
             except Exception as exc:
                 if strict_translation:
@@ -992,6 +1130,7 @@ def main() -> int:
             out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(dump_markdown_doc(out_parts), encoding="utf-8")
             localized_written.append(out_path)
+            progress.clear_document_locale(source_name, locale)
             print(f"generated: {relative(out_path)}")
 
     (TMP_DIR / "localized-files.txt").write_text(

@@ -59,17 +59,57 @@ jobs:
           python scripts/sync_private_docs.py
 
       - name: Generate localizations
+        id: localization
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           BASE_SHA: ${{ github.event.before }}
           HEAD_SHA: ${{ github.sha }}
           TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
+          TRANSLATION_STRICT: "true"
           TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
           TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '2' }}
         run: python scripts/translate.py
 
       - name: Export public docs catalog JSON
         run: python scripts/export_catalog.py
+
+      - name: Check localized catalogs before site import
+        id: catalog_check
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          english = json.loads(Path("catalog/docs-catalog-en.json").read_text(encoding="utf-8"))
+          english_documents = english.get("documents", [])
+          expected = {
+              (document.get("cluster"), document.get("category"), document.get("slug"))
+              for document in english_documents
+          }
+          incomplete = []
+          for locale in ("ru", "uk"):
+              catalog = Path("catalog") / f"docs-catalog-{locale}.json"
+              payload = json.loads(catalog.read_text(encoding="utf-8"))
+              documents = payload.get("documents", [])
+              actual = {
+                  (document.get("cluster"), document.get("category"), document.get("slug"))
+                  for document in documents
+              }
+              if len(documents) != len(english_documents) or actual != expected:
+                  incomplete.append(locale)
+
+          publishable = bool(english_documents) and not incomplete
+          if not publishable:
+              print(
+                  "::warning::Site import skipped to preserve the existing database catalog "
+                  "until both locales have a validated translation for every English document. "
+                  f"Incomplete locales: {', '.join(incomplete) if incomplete else 'English catalog is empty'}"
+              )
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"publishable={'true' if publishable else 'false'}\n")
+          PY
 
       - name: Commit localized files
         run: |
@@ -82,6 +122,11 @@ jobs:
           git add content
           git add catalog || true
           [[ -f .tmp/localized-files.txt ]] && git add .tmp/localized-files.txt || true
+          if [[ -f .tmp/translation-progress.json ]]; then
+            git add -f .tmp/translation-progress.json
+          else
+            git add -u -- .tmp/translation-progress.json || true
+          fi
           [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
           [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
           [[ -f .tmp/catalog-files.txt ]] && git add .tmp/catalog-files.txt || true
@@ -98,6 +143,7 @@ jobs:
           exit 1
 
       - name: Import published catalogs into the site database
+        if: steps.catalog_check.outputs.publishable == 'true'
         env:
           SITE_DOCS_SYNC_TOKEN: ${{ secrets.SITE_DOCS_SYNC_TOKEN }}
         run: |
@@ -110,3 +156,9 @@ jobs:
             --header "Authorization: Bearer ${SITE_DOCS_SYNC_TOKEN}" \
             --header "Accept: application/json" \
             "https://sgc-novus.fun/api/docs.php"
+
+      - name: Report incomplete localization
+        if: steps.localization.outcome == 'failure'
+        run: |
+          echo "::error::Localization stopped before completion. Completed sections and resume checkpoints were saved; a later run can continue from the saved point."
+          exit 1

@@ -41,9 +41,12 @@ Every `*.en.md` document must contain:
 8. Workflow commits updated docs and catalog files.
 
 Incremental translation mode:
-- Workflow sets `TRANSLATION_MAX_DOCS_PER_RUN` (default `8`) to ensure each run finishes and commits progress.
+- Workflow sets `TRANSLATION_MAX_DOCS_PER_RUN` (default `2`) to ensure each run finishes and commits progress.
 - Pending locale files are prioritized first, then missing/stale locales.
 - Set `TRANSLATION_MAX_DOCS_PER_RUN=0` for unlimited translation in one run.
+- Completed fields and body chunks are checkpointed in `.tmp/translation-progress.json`. If every model is out of quota, the workflow saves those checkpoints and the next scheduled run resumes without retranslating completed chunks.
+- Catalog export excludes pending, empty, untranslated, and materially incomplete RU/UK documents.
+- Site import is held until both RU and UK catalogs contain validated translations for every English document, preventing an incomplete catalog from replacing the live database.
 
 Public static catalog URL pattern:
 - `https://raw.githubusercontent.com/SGC-NOVUS/projects-docs/main/catalog/docs-catalog-en.json`
@@ -83,6 +86,7 @@ DOCS_SYNC_LOCAL_ROOT=/opt/sgc-novus DOCS_SYNC_SOURCE_KEYS=novus-edo,novus-life p
 
 - `DOCS_SYNC_GITHUB_TOKEN` - token for cloning private repos.
 - `GEMINI_API_KEY` - token for Gemini localization.
+- `SITE_DOCS_SYNC_TOKEN` - authorizes importing generated catalogs into the public site's database.
 
 ## Gemini Cascade (Free Tier Friendly)
 
@@ -102,6 +106,7 @@ Localization failure policy:
 - This prevents publishing `*.ru.md` / `*.uk.md` files that contain English text when Gemini is temporarily unavailable.
 - Optional legacy behavior can be re-enabled with `TRANSLATION_ALLOW_PENDING_FALLBACK=true`.
 - Workflow uses `cancel-in-progress: true` and a job timeout to avoid stale localization runs blocking newer fixes.
+- If localization cannot finish, the workflow still commits completed translations and checkpoints, imports only validated catalog entries, then reports the run as failed so a later scheduled run can resume.
 
 ## Gemini Smoke Check
 

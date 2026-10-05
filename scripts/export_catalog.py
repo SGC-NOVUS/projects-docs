@@ -17,6 +17,8 @@ from typing import Dict, List, Tuple
 
 import yaml
 
+from translate import is_translation_suspicious
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 CONTENT_DIR = ROOT / "content"
 CATALOG_DIR = ROOT / "catalog"
@@ -81,11 +83,54 @@ def as_text(value: object, default: str = "") -> str:
 
 def collect_locale(locale: str) -> List[DocRecord]:
     docs: List[DocRecord] = []
+    rejected = 0
     for path in sorted(CONTENT_DIR.rglob(f"*.{locale}.md")):
         fm, body = parse_markdown(path)
         rel = path.relative_to(ROOT).as_posix()
 
         slug = infer_slug(path, locale)
+        if locale != "en":
+            source_path = path.with_name(path.name[: -len(f".{locale}.md")] + ".en.md")
+            if not source_path.is_file():
+                print(f"skipped {rel}: missing English source")
+                rejected += 1
+                continue
+
+            source_fm, source_body = parse_markdown(source_path)
+            translation_status = as_text(fm.get("translation_status"), "").lower()
+            source_locale = as_text(fm.get("source_locale"), "en").lower()
+            document_locale = as_text(fm.get("locale"), locale).lower()
+            localized_title = as_text(fm.get("title"))
+            localized_description = as_text(fm.get("description"))
+            invalid_reason = ""
+            if translation_status == "pending":
+                invalid_reason = "translation is marked pending"
+            elif source_locale != "en" or document_locale != locale:
+                invalid_reason = "locale metadata does not match the catalog"
+            elif not localized_title or not localized_description or not body.strip():
+                invalid_reason = "localized title, description, or body is empty"
+            elif is_translation_suspicious(
+                as_text(source_fm.get("title")),
+                localized_title,
+                locale,
+                "title",
+            ):
+                invalid_reason = "title appears untranslated"
+            elif is_translation_suspicious(
+                as_text(source_fm.get("description")),
+                localized_description,
+                locale,
+                "description",
+            ):
+                invalid_reason = "description appears untranslated"
+            elif is_translation_suspicious(source_body, body, locale, "body"):
+                invalid_reason = "body appears untranslated or incomplete"
+
+            if invalid_reason:
+                print(f"skipped {rel}: {invalid_reason}")
+                rejected += 1
+                continue
+
         cluster = as_text(fm.get("cluster"), "documentation")
         category = as_text(fm.get("category"), "general")
         title = as_text(fm.get("title"), slug)
@@ -116,6 +161,8 @@ def collect_locale(locale: str) -> List[DocRecord]:
         )
 
     docs.sort(key=lambda d: (d.cluster, d.category, d.sort_order, d.slug))
+    if locale != "en":
+        print(f"validated {locale} catalog: {len(docs)} accepted, {rejected} rejected")
     return docs
 
 
