@@ -17,6 +17,7 @@ on:
         default: "0"
   schedule:
     - cron: "17 */6 * * *"
+  # A push containing [full-localization] in its commit message starts an unlimited pass.
   push:
     branches: [main]
     paths:
