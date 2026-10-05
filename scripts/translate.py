@@ -192,6 +192,14 @@ def _count_latin(text: str) -> int:
 def _count_cyrillic(text: str) -> int:
     return len(re.findall(r"[А-Яа-яЁёІЇЄієїґҐ]", str(text or "")))
 
+def _translation_prose(text: str) -> str:
+    value = str(text or "")
+    value = re.sub(r"```[\s\S]*?```", " ", value)
+    value = re.sub(r"`[^`]*`", " ", value)
+    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
+    value = re.sub(r"https?://\S+", " ", value)
+    return value
+
 
 def is_translation_suspicious(source_text: str, translated_text: str, target_locale: str, scope: str = "body") -> bool:
     locale = str(target_locale or "").strip().lower()
@@ -219,6 +227,12 @@ def is_translation_suspicious(source_text: str, translated_text: str, target_loc
             if similarity >= 0.85:
                 return True
         return False
+
+    prose = _translation_prose(out)
+    prose_letters = _count_latin(prose) + _count_cyrillic(prose)
+    prose_cyrillic = _count_cyrillic(prose)
+    if prose_letters >= 80 and prose_cyrillic / prose_letters < 0.12:
+        return True
 
     # Body check is intentionally conservative to avoid false positives on code-heavy docs.
     similarity = difflib.SequenceMatcher(None, src_n[:20000], out_n[:20000]).ratio()
@@ -884,11 +898,9 @@ def main() -> int:
         except Exception as exc:
             if strict_translation:
                 raise
-            print(
-                f"WARN: {scope} translation failed for locale {locale}: {exc}; using source text fallback",
-                file=sys.stderr,
-            )
-            return text
+            raise RuntimeError(
+                f"{scope} translation failed for locale {locale}; refusing mixed-language output: {exc}"
+            ) from exc
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -932,8 +944,9 @@ def main() -> int:
                                 )
                                 continue
                             if is_stale:
+                                out_path.unlink()
                                 print(
-                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; keeping stale locale file for retry {relative(out_path)}",
+                                    f"WARN: translation failed for {relative(source)} ({locale}): {exc}; removed stale locale file for retry {relative(out_path)}",
                                     file=sys.stderr,
                                 )
                                 continue

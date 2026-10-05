@@ -58,7 +58,7 @@
         "docs/adr/**"
       ],
       "local_path": "/opt/dev/novus-edo",
-      "optional": true
+      "optional": false
     },
     {
       "repo": "SGC-NOVUS/novus-life",
@@ -74,7 +74,7 @@
         "docs/adr/**"
       ],
       "local_path": "/root/novus-life",
-      "optional": true
+      "optional": false
     }
   ]
 }

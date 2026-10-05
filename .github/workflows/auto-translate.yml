@@ -10,7 +10,7 @@ on:
       translation_max_docs_per_run:
         description: "Max English docs translated in one run (0 = unlimited)"
         required: false
-        default: "1"
+        default: "2"
   schedule:
     - cron: "17 */6 * * *"
   push:
@@ -53,8 +53,8 @@ jobs:
           DOCS_SYNC_GITHUB_TOKEN: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN }}
         run: |
           if [[ -z "${DOCS_SYNC_GITHUB_TOKEN:-}" ]]; then
-            echo "DOCS_SYNC_GITHUB_TOKEN not set, skip source sync"
-            exit 0
+            echo "ERROR: DOCS_SYNC_GITHUB_TOKEN is required for the private source sync"
+            exit 1
           fi
           python scripts/sync_private_docs.py
 
@@ -65,7 +65,7 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
           TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
-          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '1' }}
+          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '2' }}
         run: python scripts/translate.py
 
       - name: Export public docs catalog JSON
@@ -96,3 +96,17 @@ jobs:
           done
           echo "Failed to push after retries"
           exit 1
+
+      - name: Import published catalogs into the site database
+        env:
+          SITE_DOCS_SYNC_TOKEN: ${{ secrets.SITE_DOCS_SYNC_TOKEN }}
+        run: |
+          if [[ -z "${SITE_DOCS_SYNC_TOKEN:-}" ]]; then
+            echo "ERROR: SITE_DOCS_SYNC_TOKEN is required to publish the docs catalog to the site database"
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${SITE_DOCS_SYNC_TOKEN}" \
+            --header "Accept: application/json" \
+            "https://sgc-novus.fun/api/docs.php"

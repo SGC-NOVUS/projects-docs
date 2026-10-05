@@ -339,11 +339,15 @@ def main() -> int:
     generated_files: Set[pathlib.Path] = set()
     changed_files: List[pathlib.Path] = []
     skipped_non_english: List[str] = []
+    skipped_sources: List[Dict[str, str]] = []
+    synced_source_repos: Set[str] = set()
 
     for source in sources:
         try:
-            if local_root is not None or source.local_path:
+            if local_root is not None:
                 repo_dir = resolve_local_repository(source, local_root)
+            elif source.local_path and pathlib.Path(source.local_path).expanduser().is_dir():
+                repo_dir = resolve_local_repository(source, None)
             else:
                 repo_dir = clone_repository(source, token, clone_root)
         except Exception as exc:
@@ -352,8 +356,11 @@ def main() -> int:
                     f"WARN: optional source '{source.repo_key}' skipped: {exc}",
                     file=sys.stderr,
                 )
+                skipped_sources.append({"repo": source.repo, "reason": str(exc)})
                 continue
             raise
+
+        synced_source_repos.add(source.repo)
 
         for md_path in sorted(repo_dir.rglob("*.md")):
             source_rel = md_path.relative_to(repo_dir)
@@ -408,10 +415,11 @@ def main() -> int:
 
         if str(fm.get("managed_by", "")) != "sync_private_docs":
             continue
-        if partial_source_sync:
-            source_repo = str(fm.get("source_repo", "")).strip()
-            if source_repo not in selected_source_repos:
-                continue
+        source_repo = str(fm.get("source_repo", "")).strip()
+        if source_repo not in synced_source_repos:
+            continue
+        if partial_source_sync and source_repo not in selected_source_repos:
+            continue
         if path.resolve() in generated_files:
             continue
 
@@ -431,7 +439,8 @@ def main() -> int:
         "changed_english": [relative(p) for p in changed_files],
         "removed_english": [relative(p) for p in removed_files],
         "skipped_non_english": skipped_non_english,
-        "sources": [s.repo for s in sources],
+        "sources": sorted(synced_source_repos),
+        "skipped_sources": skipped_sources,
     }
     (TMP_DIR / "source-sync-report.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2),
