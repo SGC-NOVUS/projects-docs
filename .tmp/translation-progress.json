@@ -180,6 +180,26 @@
       "source": "content/novus-os/panel-core-security/security-hardening-guide.en.md",
       "locale": "ru",
       "translation": "Безопасность операций платформы"
+    },
+    "6ec57d2ce173596524c816746988803ec5af40ecfc3a374bcb78b796be26e7af": {
+      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
+      "locale": "ru",
+      "translation": "Ground truth: реализация Novus Flow.EDO"
+    },
+    "08ed031b27940d152042cd3da6fe7e08318c07728c08a0de26220c8ee2e07ee7": {
+      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
+      "locale": "ru",
+      "translation": "**Status:** внутренний статический аудит чекаута от 2026-09-28. **Scope:** маршруты фронтенда на Vue, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и окружение..."
+    },
+    "87637a5dfa99a70dbf04f33b1737ec8539eb582e3a58344e07dccfc503ec8b4e": {
+      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
+      "locale": "ru",
+      "translation": "# Ground truth: реализация Novus Flow.EDO\n\n**Статус:** внутренний статический аудит checkout по состоянию на 2026-09-28.\n**Область:** маршруты frontend на Vue, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и чтение окружения. Этот документ описывает реализованное поведение, а не соответствие стандартам или юридическую сертификацию.\n\n## Исполняемая структура\n\nПриложение представляет собой клиент браузера на Vue/Vite плюс API на Express, запускаемый через `tsx server/index.ts`.\n\n| Поверхность | Фактическая реализация |\n| --- | --- |\n| Интерфейс браузера | Vue 3, Vue Router, Pinia и службы клиентской подписи |\n| API | Express 5 на `PORT`, по умолчанию `3001` |\n| Персистентность | Prisma 7 с адаптером MariaDB; резервный `DATABASE_URL` — `mysql://novus:novus123@localhost:3306/novus_edo` |\n| Объектное хранилище | Cloudflare R2 через AWS S3 SDK с предварительно подписанными URL загрузки/скачивания |\n| Почта | Resend плюс рендеринг Vue Email |\n| Конвертер | Независимый HTTP-сервис на `127.0.0.1:4174`, запускающий LibreOffice (`SOFFICE_PATH` или `soffice`) |\n| Подпись в браузере | Закрытые ключи документов остаются на стороне браузера в соответствии с реализованной клиентской архитектурой; сервер сохраняет артефакты подписи и метаданные |\n\n`server/index.ts` загружает dotenv, отклоняет отсутствующий или фиктивный `JWT_SECRET` только при `NODE_ENV=production`, настраивает CORS с помощью `CORS_ORIGIN` или `*`, подключает маршруты и обслуживает `dist/` в production."
+    },
+    "7b3d2185112e6ed2d4a81d95cb804bffa0f4781288ad5da9776448564ce1f61c": {
+      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
+      "locale": "ru",
+      "translation": "## Маршруты браузера\n\n| Маршрут | Требование авторизации | Реализованное представление / назначение |\n| --- | --- | --- |\n| `/`, `/about`, `/privacy`, `/terms`, `/login`, `/register` | Нет | Публичные экраны, юридическая информация и экраны идентификации |\n| `/dashboard` | Да | В настоящее время использует повторно `Inbox.vue` |\n| `/documents`, `/documents/new`, `/documents/:id` | Да | Список документов, создание и рабочий процесс просмотра деталей |\n| `/contacts`, `/archive`, `/settings` | Да | Адресная книга, архив и настройки |\n| `/features`, `/pricing` | Нет | Перенаправление на `/` |\n\nНавигационный защитник (navigation guard) получает текущего пользователя при наличии токена и перенаправляет неаутентифицированные защищенные переходы на страницу `/login` (`src/router/index.ts`).\n\n## Каталог Express API\n\nВсе пути ниже имеют префикс `/api`, указанный в первом столбце.\n\n| Префикс | Операции | Аутентификация | Назначение |\n| --- | --- | --- | --- |\n| `/health` | `GET` | Нет | Базовый ответ о работоспособности процесса |\n| `/proxy` | `POST` | Нет | Бинарный прокси для трафика EUSign CMP/TSP/OCSP |\n| `/auth` | `POST /register`, `POST /login`, `GET /verify-email`, `GET /me` | `/me` требует bearer token | Вход по email/паролю и КЭП/ИНН, регистрация и верификация |\n| `/users` | `PUT /me`, `PUT /me/password` | Bearer token | Обновление профиля/email и установка/смена пароля |\n| `/organizations` | `GET /`, `POST /`, `GET /:id/members`, `POST /:id/members` | Bearer token | Членство в организациях и управление участниками |\n| `/documents` | `POST /`, `GET /`, `GET /tasks`, `POST /:id/sign`, `GET /:id/archive`, `GET /:id/download` | Bearer token | Устаревший рабочий процесс документов с локальной загрузкой |\n| `/v2/documents` | `GET /`, `GET /:id`, `POST /presigned-url`, `POST /`, `POST /:id/sign`, `DELETE /:id`, `POST /:id/cancel`, `GET /:id/archive` | Bearer token | Рабочий процесс DocumentPackage с хранилищем R2 и маршрутизацией участников |"
     }
   }
 }
