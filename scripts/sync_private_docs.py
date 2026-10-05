@@ -19,6 +19,8 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Set, Tuple
 
@@ -296,6 +298,44 @@ def clone_repository(source: SourceSpec, token: str, clone_root: pathlib.Path) -
     return target
 
 
+def verify_github_repository_access(repo: str, token: str) -> None:
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            if response.status == 200:
+                print(f"GitHub API access verified: {repo}")
+                return
+            status = response.status
+    except urllib.error.HTTPError as exc:
+        status = exc.code
+
+    if status == 401:
+        raise RuntimeError(
+            f"GitHub rejected DOCS_SYNC_GITHUB_TOKEN for '{repo}' (HTTP 401). "
+            "Verify the secret contains the current, unexpired PAT."
+        )
+    if status == 403:
+        raise RuntimeError(
+            f"GitHub denied DOCS_SYNC_GITHUB_TOKEN access to '{repo}' (HTTP 403). "
+            "Verify organization approval and Contents: read permission."
+        )
+    if status == 404:
+        raise RuntimeError(
+            f"GitHub could not find or expose '{repo}' to DOCS_SYNC_GITHUB_TOKEN (HTTP 404). "
+            "Verify the repository owner, repository access selection, and Contents: read permission."
+        )
+    raise RuntimeError(
+        f"GitHub API access check for '{repo}' failed with HTTP {status}."
+    )
+
+
 def resolve_local_repository(source: SourceSpec, local_root: pathlib.Path | None) -> pathlib.Path:
     if source.local_path:
         target = pathlib.Path(source.local_path).expanduser().resolve()
@@ -347,6 +387,11 @@ def main() -> int:
             )
     selected_source_repos = {s.repo for s in sources}
     partial_source_sync = bool(source_keys)
+
+    if token:
+        required_source_repos = {s.repo for s in sources if not s.optional}
+        for repo in sorted(required_source_repos):
+            verify_github_repository_access(repo, token)
 
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     clone_root = TMP_DIR / "source-repos"
