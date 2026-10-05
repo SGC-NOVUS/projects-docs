@@ -8,7 +8,7 @@ version: 0.1.0
 title: Settings
 description: The Settings workspace manages Panel configuration, branding, integration
   state and protected secret-backed values through a permissioned UI.
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

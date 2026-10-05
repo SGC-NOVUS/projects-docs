@@ -9,7 +9,7 @@ title: Getting Started With NOVUS Agent
 description: NOVUS Agent is the host-side Data-Plane service for NOVUS-OS. It executes
   authorized runtime operations and exposes the typed transport used by the Panel;
   it is not a user-facin...
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

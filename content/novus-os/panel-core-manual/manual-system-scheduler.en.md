@@ -9,7 +9,7 @@ title: Scheduler
 description: The Scheduler workspace manages approved recurring jobs for Panel-owned
   operations. Jobs execute through the platform scheduler and remain subject to permissions,
   audit records...
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

@@ -9,7 +9,7 @@ title: Service Desk
 description: The Service Desk records and coordinates operational incidents. It links
   alerts, affected resources, timelines and approved notifications without exposing
   host credentials or in...
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

@@ -9,7 +9,7 @@ title: Repository Surface Audit
 description: '- Repository structure and module surface - REST route inventory (routes/api.php)
   - Service/Controller/Worker inventory - Frontend surface (resources/js) - High-concentration
   ho...'
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

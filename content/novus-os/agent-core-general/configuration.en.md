@@ -9,7 +9,7 @@ title: 'NOVUS Agent-Core: Configuration Reference'
 description: The authoritative configuration source is internal/config/config.go.
   All supported Agent settings are environment variables; undocumented variables are
   not a supported interface.
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/agent-core

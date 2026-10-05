@@ -9,7 +9,7 @@ title: Permission Guard
 description: Permission Guard is the NOVUS Panel security posture surface. It helps
   authorized operators review whether the Panel environment meets the platform's expected
   access and configu...
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

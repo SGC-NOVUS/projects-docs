@@ -9,7 +9,7 @@ title: Backups
 description: The Backups workspace protects website, database and managed instance
   data. Authorized operators use it to review recovery points, create protected snapshots,
   apply retention po...
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

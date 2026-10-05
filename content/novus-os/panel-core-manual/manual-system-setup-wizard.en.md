@@ -9,7 +9,7 @@ title: Setup Wizard
 description: The Setup Wizard prepares a new NOVUS Panel environment through a guided,
   authenticated workflow. It validates each stage before the platform activates the
   related capability.
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core

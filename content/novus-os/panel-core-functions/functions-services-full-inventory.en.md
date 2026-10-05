@@ -8,7 +8,7 @@ version: 0.1.0
 title: Services Full Inventory
 description: Auto-generated inventory of app/Services classes/interfaces/traits and
   their public methods.
-last_updated: '2026-10-04'
+last_updated: '2026-10-05'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/panel-core
