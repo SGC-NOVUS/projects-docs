@@ -270,19 +270,29 @@ def clone_repository(source: SourceSpec, token: str, clone_root: pathlib.Path) -
         shutil.rmtree(target)
 
     repo_url = f"https://x-access-token:{token}@github.com/{source.repo}.git"
-    run(
-        [
-            "git",
-            "clone",
-            "--depth",
-            "1",
-            "--branch",
-            source.branch,
-            "--no-tags",
-            repo_url,
-            str(target),
-        ]
-    )
+    try:
+        run(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "--branch",
+                source.branch,
+                "--no-tags",
+                repo_url,
+                str(target),
+            ]
+        )
+    except RuntimeError as exc:
+        detail = str(exc).lower()
+        if "authentication failed" in detail or "repository not found" in detail:
+            raise RuntimeError(
+                f"Unable to read private source '{source.repo}'. Verify DOCS_SYNC_GITHUB_TOKEN "
+                "is a valid fine-grained or classic PAT with repository Contents: read access "
+                "and that the token is authorized for this repository."
+            ) from None
+        raise
     return target
 
 
