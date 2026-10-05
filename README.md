@@ -142,4 +142,4 @@ Full localization rebuild (all English docs):
 TRANSLATE_ALL=true GEMINI_API_KEY=*** python3 scripts/translate.py
 ```
 
-In GitHub Actions, this can be triggered via manual `workflow_dispatch` input `translate_all=true`.
+In GitHub Actions, use `workflow_dispatch` with `translate_all=true` and `skip_source_sync=true` to run the full pass from tracked English docs without private source checkout. The pass processes every source document, honors the shared 15 RPM limiter and per-model quotas, and resumes saved translation checkpoints on later runs.

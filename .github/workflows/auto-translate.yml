@@ -7,14 +7,18 @@ on:
         description: "Translate all English docs (rebuild all locales)"
         required: false
         default: "false"
+        type: boolean
       skip_source_sync:
         description: "Use tracked English docs without pulling private repositories"
         required: false
         default: "false"
+        type: boolean
       translation_max_docs_per_run:
         description: "Max English docs translated in one run (0 = unlimited)"
         required: false
         default: "0"
+  repository_dispatch:
+    types: [full-localization]
   schedule:
     - cron: "17 */6 * * *"
   # A push containing [full-localization] in its commit message starts an unlimited pass.
@@ -57,7 +61,8 @@ jobs:
         id: source_sync
         continue-on-error: true
         if: |
-          (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_source_sync != 'true') &&
+          !(github.event_name == 'workflow_dispatch' && inputs.skip_source_sync) &&
+          !(github.event_name == 'repository_dispatch' && github.event.action == 'full-localization') &&
           !(github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]'))
         env:
           DOCS_SYNC_GITHUB_TOKEN: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN }}
@@ -82,8 +87,8 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
           TRANSLATION_STRICT: "true"
-          TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]')) || 'false' }}
-          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]') && '0') || '2' }}
+          TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && inputs.translate_all) || (github.event_name == 'repository_dispatch' && github.event.action == 'full-localization') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]')) || 'false' }}
+          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.translation_max_docs_per_run) || (github.event_name == 'repository_dispatch' && github.event.action == 'full-localization' && '0') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]') && '0') || '2' }}
         run: python scripts/translate.py
 
       - name: Export public docs catalog JSON

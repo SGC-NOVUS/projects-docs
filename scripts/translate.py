@@ -1337,14 +1337,17 @@ def main() -> int:
                     return "\n\n".join(translated_chunks).strip()
 
                 translated_body = translate_body(body_en, locale)
-            except (GeminiQuotaExhaustedError, GeminiTranslationQualityError) as exc:
-                reason = (
-                    "quality validation failed"
-                    if isinstance(exc, GeminiTranslationQualityError)
-                    else "quota/rate limit exhausted"
-                )
+            except GeminiTranslationQualityError as exc:
                 print(
-                    f"WARN: pausing localization at {source_name} ({locale}): {reason}: {exc}. "
+                    f"WARN: skipping {source_name} ({locale}) after localization quality "
+                    f"validation failed: {exc}. Completed chunks are checkpointed for retry.",
+                    file=sys.stderr,
+                )
+                continue
+            except GeminiQuotaExhaustedError as exc:
+                print(
+                    f"WARN: pausing localization at {source_name} ({locale}): "
+                    f"quota/rate limit exhausted: {exc}. "
                     "Completed chunks are checkpointed for the next run.",
                     file=sys.stderr,
                 )
