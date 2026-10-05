@@ -41,6 +41,20 @@ class TranslationProgressTests(unittest.TestCase):
 
 
 class GeminiCascadeTests(unittest.TestCase):
+    def test_configured_cascade_places_flash_lite_last_with_confirmed_limits(self) -> None:
+        config = translate.load_json(translate.LOCALES_CONFIG)
+        cascade = config["gemini_model_cascade"]
+
+        self.assertEqual(cascade[-1]["model"], "gemini-3.5-flash-lite")
+        self.assertEqual(
+            {key: cascade[-1][key] for key in ("rpm", "tpm", "rpd")},
+            {"rpm": 15, "tpm": 250000, "rpd": 500},
+        )
+        self.assertEqual(
+            translate.build_model_candidates(config["gemini_model"], translate.load_configured_model_cascade(config)),
+            [entry["model"] for entry in cascade],
+        )
+
     def test_model_metadata_exposes_input_and_output_token_limits(self) -> None:
         response = FakeResponse(
             200,
@@ -98,7 +112,7 @@ class GeminiCascadeTests(unittest.TestCase):
 
         self.assertEqual(post.call_count, 2)
 
-    def test_quota_order_prefers_model_with_more_daily_capacity(self) -> None:
+    def test_quota_order_preserves_configured_fallback_priority(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             tracker = translate.GeminiQuotaTracker(
                 pathlib.Path(temporary_directory) / "usage.json",
@@ -110,7 +124,7 @@ class GeminiCascadeTests(unittest.TestCase):
 
         self.assertEqual(
             tracker.model_order(["gemini-flash", "gemini-flash-lite"]),
-            ["gemini-flash-lite", "gemini-flash"],
+            ["gemini-flash", "gemini-flash-lite"],
         )
 
     def test_daily_quota_prevents_another_generation_request(self) -> None:
@@ -123,6 +137,56 @@ class GeminiCascadeTests(unittest.TestCase):
 
             with self.assertRaises(translate.GeminiQuotaUnavailableError):
                 tracker.prepare_request("gemini-flash", 20)
+
+    def test_rpm_quota_uses_next_model_instead_of_waiting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {"gemini-flash": {"rpm": 1, "tpm": 250000, "rpd": 20}},
+            )
+            tracker.record_attempt("gemini-flash", 20)
+
+            with self.assertRaisesRegex(translate.GeminiQuotaUnavailableError, "RPM quota"):
+                tracker.prepare_request("gemini-flash", 20)
+
+    def test_tpm_quota_prevents_request_that_would_exceed_limit(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {"gemini-flash": {"rpm": 5, "tpm": 100, "rpd": 20}},
+            )
+            tracker.record_attempt("gemini-flash", 80)
+
+            with self.assertRaisesRegex(translate.GeminiQuotaUnavailableError, "TPM quota"):
+                tracker.prepare_request("gemini-flash", 21)
+
+    def test_local_quota_exhaustion_raises_resumable_cascade_pause(self) -> None:
+        limits = {
+            "model-a": {"rpm": 1, "tpm": 250000, "rpd": 20},
+            "model-b": {"rpm": 1, "tpm": 250000, "rpd": 20},
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                limits,
+            )
+            tracker.record_attempt("model-a", 20)
+            tracker.record_attempt("model-b", 20)
+
+            with patch.object(translate.requests, "post") as post:
+                with self.assertRaises(translate.GeminiQuotaExhaustedError):
+                    translate.gemini_translate(
+                        "test-key",
+                        ["model-a", "model-b"],
+                        "Configure the server",
+                        "ru",
+                        [],
+                        content_scope="title",
+                        quota_tracker=tracker,
+                        model_limits=limits,
+                    )
+
+            post.assert_not_called()
 
     def test_rate_limit_response_classifies_per_day_quota_as_daily_block(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:

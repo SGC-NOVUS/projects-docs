@@ -224,16 +224,7 @@ class GeminiQuotaTracker:
         return max(0, limit - self.calls.get(model, 0)) if limit > 0 else None
 
     def model_order(self, models: List[str]) -> List[str]:
-        return sorted(
-            models,
-            key=lambda model: (
-                model not in self.daily_blocked,
-                self.remaining_daily(model) is None,
-                self.remaining_daily(model) or 0,
-                self.limits.get(model, {}).get("rpm", 0),
-            ),
-            reverse=True,
-        )
+        return list(models)
 
     def prepare_request(self, model: str, estimated_tokens: int) -> None:
         limits = self.limits.get(model, {})
@@ -252,25 +243,18 @@ class GeminiQuotaTracker:
 
         rpm = limits.get("rpm", 0)
         tpm = limits.get("tpm", 0)
-        while True:
-            events = self.events.setdefault(model, [])
-            events[:] = [event for event in events if now - event["at"] < 60]
-            request_full = rpm > 0 and len(events) >= rpm
-            tokens_full = tpm > 0 and sum(event["tokens"] for event in events) + estimated_tokens > tpm
-            if not request_full and not tokens_full:
-                return
-            if tokens_full and estimated_tokens > tpm:
-                raise GeminiQuotaUnavailableError(
-                    f"{model} request exceeds the configured {tpm} TPM budget"
-                )
-            wait_until = min(event["at"] + 60 for event in events)
-            delay = max(0.1, wait_until - now + 0.1)
-            print(
-                f"Quota pacing: waiting {delay:.1f}s for {model} "
-                f"(RPM={rpm or 'unlimited'}, TPM={tpm or 'unlimited'})"
+        events = self.events.setdefault(model, [])
+        events[:] = [event for event in events if now - event["at"] < 60]
+        if rpm > 0 and len(events) >= rpm:
+            raise GeminiQuotaUnavailableError(
+                f"{model} RPM quota exhausted ({rpm} requests per minute)"
             )
-            time.sleep(delay)
-            now = time.time()
+        tokens_used = sum(event["tokens"] for event in events)
+        if tpm > 0 and tokens_used + estimated_tokens > tpm:
+            raise GeminiQuotaUnavailableError(
+                f"{model} TPM quota unavailable ({tokens_used:.0f}/{tpm} tokens used; "
+                f"request reserves {estimated_tokens})"
+            )
 
     def record_attempt(self, model: str, estimated_tokens: int) -> None:
         now = time.time()
@@ -693,27 +677,23 @@ def load_configured_model_cascade(config: Dict[str, object]) -> List[str]:
 
 
 def build_model_candidates(preferred_model: str, configured_cascade: List[str] | None = None) -> List[str]:
-    env_fallbacks = [
-        normalize_model_name(x)
-        for x in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",")
-        if x.strip()
-    ]
-
     preferred_model = normalize_model_name(preferred_model)
 
     candidates: List[str] = []
     if configured_cascade:
         candidates.extend([normalize_model_name(x) for x in configured_cascade if normalize_model_name(x)])
-        if preferred_model and preferred_model not in candidates:
-            candidates.insert(0, preferred_model)
     else:
+        env_fallbacks = [
+            normalize_model_name(x)
+            for x in os.getenv("GEMINI_FALLBACK_MODELS", "").split(",")
+            if x.strip()
+        ]
         if preferred_model.endswith("-latest"):
             candidates = [preferred_model, preferred_model[: -len("-latest")]]
         else:
             candidates = [f"{preferred_model}-latest", preferred_model]
-
-    candidates.extend(env_fallbacks)
-    candidates.extend(DEFAULT_GEMINI_MODEL_FALLBACKS)
+        candidates.extend(env_fallbacks)
+        candidates.extend(DEFAULT_GEMINI_MODEL_FALLBACKS)
 
     unique: List[str] = []
     seen = set()
@@ -831,6 +811,8 @@ def gemini_translate(
     }
 
     last_error = None
+    quota_limited = False
+    non_quota_failure = False
     try:
         max_retries = max(0, int(os.getenv("GEMINI_MAX_RETRIES", "3")))
     except ValueError:
@@ -845,7 +827,7 @@ def gemini_translate(
         limits = (model_limits or {}).get(model, {})
         max_output_tokens = 8192
         if context_info and context_info.input_token_limit:
-            estimated_input_tokens = (len(prompt) + 1) // 2
+            estimated_input_tokens = len(prompt.encode("utf-8"))
             if estimated_input_tokens > context_info.input_token_limit:
                 last_error = (
                     f"{model}: prompt estimate {estimated_input_tokens} exceeds "
@@ -856,13 +838,7 @@ def gemini_translate(
         if context_info and context_info.output_token_limit:
             max_output_tokens = min(8192, context_info.output_token_limit)
         payload["generationConfig"]["maxOutputTokens"] = max_output_tokens
-        estimated_tokens = (
-            (len(prompt) + 1) // 3
-            + min(
-                max_output_tokens,
-                max(128, int(len(text) / 1.5)),
-            )
-        )
+        estimated_tokens = len(prompt.encode("utf-8")) + max_output_tokens
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
         resp = None
@@ -873,6 +849,7 @@ def gemini_translate(
                     quota_tracker.prepare_request(model, estimated_tokens)
                 except GeminiQuotaUnavailableError as exc:
                     last_error = str(exc)
+                    quota_limited = True
                     print(f"WARN: {exc}; trying next model", file=sys.stderr)
                     model_unavailable = True
                     break
@@ -881,7 +858,9 @@ def gemini_translate(
                 resp = requests.post(url, json=payload, timeout=120)
             except requests.RequestException as exc:
                 if attempt >= max_retries:
-                    raise
+                    last_error = f"{model}: request failed after retries ({exc})"
+                    non_quota_failure = True
+                    break
                 delay = retry_base_seconds * (2 ** attempt)
                 print(
                     f"WARN: request to Gemini model '{model}' failed ({exc}); retrying in {delay:.1f}s",
@@ -908,6 +887,12 @@ def gemini_translate(
         if model_unavailable:
             continue
         if resp is None:
+            if last_error and last_error.startswith(f"{model}: request failed after retries"):
+                print(
+                    f"WARN: Gemini model '{model}' is unreachable after retries; trying next candidate",
+                    file=sys.stderr,
+                )
+                continue
             raise RuntimeError(f"unable to get response from Gemini model '{model}'")
 
         if resp.status_code >= 400:
@@ -927,6 +912,7 @@ def gemini_translate(
                 detail = resp.text.strip()
 
             if resp.status_code == 429:
+                quota_limited = True
                 short_detail = detail[:180] if detail else "quota/rate exhausted"
                 if quota_tracker:
                     quota_tracker.record_rate_limit(model, detail)
@@ -941,6 +927,7 @@ def gemini_translate(
 
             can_retry_with_next = resp.status_code in TRANSIENT_HTTP_STATUSES and idx < len(models) - 1
             if can_retry_with_next:
+                non_quota_failure = True
                 short_detail = detail[:180] if detail else "temporary upstream error"
                 print(
                     f"WARN: Gemini model '{model}' still failing with HTTP {resp.status_code} after retries ({short_detail}); trying next candidate",
@@ -951,6 +938,7 @@ def gemini_translate(
 
             can_retry_with_next = resp.status_code in (400, 403, 404) and idx < len(models) - 1
             if can_retry_with_next:
+                non_quota_failure = True
                 short_detail = detail[:180] if detail else "model unavailable"
                 print(
                     f"WARN: Gemini model '{model}' failed with HTTP {resp.status_code} ({short_detail}); trying next candidate",
@@ -995,7 +983,7 @@ def gemini_translate(
 
         return text_out, model
 
-    if last_error and "HTTP 429" in last_error:
+    if quota_limited and not non_quota_failure:
         raise GeminiQuotaExhaustedError(f"all Gemini model candidates exhausted: {last_error}")
     if last_error:
         raise RuntimeError(f"all Gemini model candidates failed; last error: {last_error}")
@@ -1150,8 +1138,10 @@ def main() -> int:
             if filtered:
                 model_candidates = filtered
             else:
-                preferred_available = [m for m in available_generative if m.startswith("gemini")]
-                model_candidates = preferred_available[:5] if preferred_available else available_generative[:5]
+                raise RuntimeError(
+                    "none of the configured Gemini models are available for generateContent; "
+                    "refusing to use an unconfigured model without quota limits"
+                )
     except Exception as exc:
         print(f"WARN: unable to filter model candidates by ListModels: {exc}", file=sys.stderr)
 
@@ -1183,7 +1173,7 @@ def main() -> int:
     TMP_DIR.mkdir(parents=True, exist_ok=True)
     quota_tracker = GeminiQuotaTracker(TMP_DIR / "gemini-usage.json", model_limits)
     model_candidates = quota_tracker.model_order(model_candidates)
-    print(f"Gemini cascade order (quota-aware): {', '.join(model_candidates)}")
+    print(f"Gemini cascade order (configured priority): {', '.join(model_candidates)}")
 
     def translate_text(text: str, locale: str, scope: str = "body") -> str:
         nonlocal model_candidates
@@ -1199,9 +1189,7 @@ def main() -> int:
             model_context=model_context,
         )
         if used_model != model_candidates[0]:
-            model_candidates = [used_model] + [m for m in model_candidates if m != used_model]
             print(f"Switched Gemini model: {used_model}")
-            model_candidates = quota_tracker.model_order(model_candidates)
         return translated
 
     progress = TranslationProgress(TMP_DIR / "translation-progress.json")
