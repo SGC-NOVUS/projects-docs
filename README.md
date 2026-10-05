@@ -46,6 +46,7 @@ Incremental translation mode:
 - Set `TRANSLATION_MAX_DOCS_PER_RUN=0` for unlimited translation in one run.
 - Completed fields and body chunks are checkpointed in `.tmp/translation-progress.json`. If every model is out of quota, the workflow saves those checkpoints and the next scheduled run resumes without retranslating completed chunks.
 - Gemini request pacing reads each configured model's RPM, TPM, and RPD limits, tracks daily requests across workflow runs in `.tmp/gemini-usage.json`, and prefers models with more remaining daily capacity. API model input/output token limits are also checked before generation; RPM and TPM windows are paced rather than burst-called.
+- When the full model cascade is exhausted, translation pauses with a warning instead of failing the workflow; completed content and checkpoints are committed, and the next scheduled run resumes.
 - Catalog export excludes pending, empty, untranslated, and materially incomplete RU/UK documents.
 - Site import is held until both RU and UK catalogs contain validated translations for every English document, preventing an incomplete catalog from replacing the live database.
 

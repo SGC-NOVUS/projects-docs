@@ -124,6 +124,19 @@ class GeminiCascadeTests(unittest.TestCase):
             with self.assertRaises(translate.GeminiQuotaUnavailableError):
                 tracker.prepare_request("gemini-flash", 20)
 
+    def test_rate_limit_response_classifies_per_day_quota_as_daily_block(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {"gemini-flash": {"rpm": 5, "tpm": 250000, "rpd": 20}},
+            )
+            tracker.record_rate_limit(
+                "gemini-flash",
+                "Quota exceeded for generate_requests_per_model_per_day",
+            )
+
+        self.assertIn("gemini-flash", tracker.daily_blocked)
+
     def test_long_english_fallback_is_rejected_as_translation(self) -> None:
         text = "This is a long English technical paragraph describing the system behavior. " * 5
         self.assertTrue(translate.is_translation_suspicious(text, text, "ru", "body"))

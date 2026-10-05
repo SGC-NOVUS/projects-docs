@@ -286,10 +286,27 @@ class GeminiQuotaTracker:
 
     def record_rate_limit(self, model: str, detail: str) -> None:
         normalized = detail.lower().replace("_", " ")
-        if any(marker in normalized for marker in ("per day", "daily", "requests/day", "requests per day")):
+        if any(
+            marker in normalized
+            for marker in (
+                "per day",
+                "per model per day",
+                "per day per model",
+                "daily",
+                "requests/day",
+                "requests per day",
+                "requests per model per day",
+            )
+        ):
             self.daily_blocked.add(model)
         else:
-            self.blocked_until[model] = time.time() + 60
+            cooldown = 60
+            if any(
+                marker in normalized
+                for marker in ("per minute", "per min", "requests/minute", "requests per minute")
+            ):
+                cooldown = 60
+            self.blocked_until[model] = time.time() + cooldown
         self.save()
 
 
@@ -896,7 +913,16 @@ def gemini_translate(
         if resp.status_code >= 400:
             detail = ""
             try:
-                detail = str((resp.json() or {}).get("error", {}).get("message", "")).strip()
+                error = (resp.json() or {}).get("error", {})
+                detail_parts = [str(error.get("message", "")).strip()]
+                for error_detail in error.get("details", []):
+                    if isinstance(error_detail, dict):
+                        detail_parts.extend(
+                            str(value)
+                            for value in error_detail.values()
+                            if isinstance(value, (str, int, float))
+                        )
+                detail = " ".join(part for part in detail_parts if part)
             except Exception:
                 detail = resp.text.strip()
 
@@ -1288,6 +1314,17 @@ def main() -> int:
                     return "\n\n".join(translated_chunks).strip()
 
                 translated_body = translate_body(body_en, locale)
+            except GeminiQuotaExhaustedError as exc:
+                print(
+                    f"WARN: pausing localization at {source_name} ({locale}): {exc}. "
+                    "Completed chunks are checkpointed for the next run.",
+                    file=sys.stderr,
+                )
+                (TMP_DIR / "localized-files.txt").write_text(
+                    "\n".join(relative(path) for path in localized_written) + "\n",
+                    encoding="utf-8",
+                )
+                return 0
             except Exception as exc:
                 if strict_translation:
                     raise

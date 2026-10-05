@@ -7,10 +7,14 @@ on:
         description: "Translate all English docs (rebuild all locales)"
         required: false
         default: "false"
+      skip_source_sync:
+        description: "Use tracked English docs without pulling private repositories"
+        required: false
+        default: "false"
       translation_max_docs_per_run:
         description: "Max English docs translated in one run (0 = unlimited)"
         required: false
-        default: "2"
+        default: "0"
   schedule:
     - cron: "17 */6 * * *"
   push:
@@ -49,6 +53,9 @@ jobs:
           pip install -r scripts/requirements.txt
 
       - name: Sync English docs from private repositories
+        id: source_sync
+        continue-on-error: true
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.skip_source_sync != 'true'
         env:
           DOCS_SYNC_GITHUB_TOKEN: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN }}
         run: |
@@ -57,6 +64,11 @@ jobs:
             exit 1
           fi
           python scripts/sync_private_docs.py
+
+      - name: Warn when private source sync is unavailable
+        if: steps.source_sync.outcome == 'failure'
+        run: |
+          echo "::warning::Private source sync failed. Localization will continue with the English documents already tracked in project-docs."
 
       - name: Generate localizations
         id: localization
