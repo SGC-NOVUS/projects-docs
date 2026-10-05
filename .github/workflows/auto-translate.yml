@@ -55,7 +55,9 @@ jobs:
       - name: Sync English docs from private repositories
         id: source_sync
         continue-on-error: true
-        if: github.event_name != 'workflow_dispatch' || github.event.inputs.skip_source_sync != 'true'
+        if: |
+          (github.event_name != 'workflow_dispatch' || github.event.inputs.skip_source_sync != 'true') &&
+          !(github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]'))
         env:
           DOCS_SYNC_GITHUB_TOKEN: ${{ secrets.DOCS_SYNC_GITHUB_TOKEN }}
         run: |
@@ -79,8 +81,8 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           TRANSLATION_ALLOW_PENDING_FALLBACK: "false"
           TRANSLATION_STRICT: "true"
-          TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || 'false' }}
-          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || '2' }}
+          TRANSLATE_ALL: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translate_all) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]')) || 'false' }}
+          TRANSLATION_MAX_DOCS_PER_RUN: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.translation_max_docs_per_run) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[full-localization]') && '0') || '2' }}
         run: python scripts/translate.py
 
       - name: Export public docs catalog JSON
