@@ -21,7 +21,8 @@ class FakeResponse:
         return self._payload
 
     def raise_for_status(self) -> None:
-        raise RuntimeError(f"unexpected HTTP {self.status_code}")
+        if self.status_code >= 400:
+            raise RuntimeError(f"unexpected HTTP {self.status_code}")
 
 
 class TranslationProgressTests(unittest.TestCase):
@@ -40,6 +41,26 @@ class TranslationProgressTests(unittest.TestCase):
 
 
 class GeminiCascadeTests(unittest.TestCase):
+    def test_model_metadata_exposes_input_and_output_token_limits(self) -> None:
+        response = FakeResponse(
+            200,
+            {
+                "models": [
+                    {
+                        "name": "models/gemini-flash",
+                        "supportedGenerationMethods": ["generateContent"],
+                        "inputTokenLimit": 1000000,
+                        "outputTokenLimit": 8192,
+                    }
+                ]
+            },
+        )
+        with patch.object(translate.requests, "get", return_value=response):
+            models = translate.fetch_available_models("test-key")
+
+        self.assertEqual(models[0].input_token_limit, 1000000)
+        self.assertEqual(models[0].output_token_limit, 8192)
+
     def test_quota_response_uses_next_model_without_retrying_same_model(self) -> None:
         responses = [
             FakeResponse(429, {"error": {"message": "RESOURCE_EXHAUSTED"}}),
@@ -76,6 +97,32 @@ class GeminiCascadeTests(unittest.TestCase):
                 )
 
         self.assertEqual(post.call_count, 2)
+
+    def test_quota_order_prefers_model_with_more_daily_capacity(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {
+                    "gemini-flash": {"rpm": 5, "tpm": 250000, "rpd": 20},
+                    "gemini-flash-lite": {"rpm": 15, "tpm": 250000, "rpd": 500},
+                },
+            )
+
+        self.assertEqual(
+            tracker.model_order(["gemini-flash", "gemini-flash-lite"]),
+            ["gemini-flash-lite", "gemini-flash"],
+        )
+
+    def test_daily_quota_prevents_another_generation_request(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            tracker = translate.GeminiQuotaTracker(
+                pathlib.Path(temporary_directory) / "usage.json",
+                {"gemini-flash": {"rpm": 5, "tpm": 250000, "rpd": 1}},
+            )
+            tracker.record_attempt("gemini-flash", 20)
+
+            with self.assertRaises(translate.GeminiQuotaUnavailableError):
+                tracker.prepare_request("gemini-flash", 20)
 
     def test_long_english_fallback_is_rejected_as_translation(self) -> None:
         text = "This is a long English technical paragraph describing the system behavior. " * 5

@@ -11,6 +11,7 @@ Auto-localize changed English docs using Gemini.
 from __future__ import annotations
 
 import difflib
+import datetime as dt
 import hashlib
 import json
 import os
@@ -66,6 +67,12 @@ class DocParts:
 class GeminiModelInfo:
     name: str
     supported_methods: List[str]
+    input_token_limit: int | None = None
+    output_token_limit: int | None = None
+
+
+class GeminiQuotaUnavailableError(RuntimeError):
+    pass
 
 
 class TranslationProgress:
@@ -146,6 +153,144 @@ class TranslationProgress:
             encoding="utf-8",
         )
         temporary_path.replace(self.path)
+
+
+class GeminiQuotaTracker:
+    def __init__(self, path: pathlib.Path, limits: Dict[str, Dict[str, int]]):
+        self.path = path
+        self.limits = limits
+        self.today = dt.datetime.now(dt.timezone.utc).date().isoformat()
+        self.calls: Dict[str, int] = {}
+        self.blocked_until: Dict[str, float] = {}
+        self.daily_blocked: set[str] = set()
+        self.events: Dict[str, List[Dict[str, float]]] = {}
+        if not path.exists():
+            return
+
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"unable to read Gemini quota state {path}: {exc}") from exc
+        if not isinstance(data, dict):
+            raise RuntimeError(f"invalid Gemini quota state: {path}")
+        if data.get("date") != self.today:
+            return
+
+        calls = data.get("calls", {})
+        blocked_until = data.get("blocked_until", {})
+        daily_blocked = data.get("daily_blocked", [])
+        events = data.get("events", {})
+        if not all(isinstance(value, dict) for value in (calls, blocked_until, events)):
+            raise RuntimeError(f"invalid Gemini quota state maps: {path}")
+        if not isinstance(daily_blocked, list):
+            raise RuntimeError(f"invalid Gemini daily quota state: {path}")
+
+        now = time.time()
+        self.calls = {str(key): int(value) for key, value in calls.items()}
+        self.blocked_until = {
+            str(key): float(value)
+            for key, value in blocked_until.items()
+            if float(value) > now
+        }
+        self.daily_blocked = {str(value) for value in daily_blocked}
+        self.events = {
+            str(key): [
+                {"at": float(event["at"]), "tokens": float(event["tokens"])}
+                for event in value
+                if now - float(event["at"]) < 60
+            ]
+            for key, value in events.items()
+            if isinstance(value, list)
+        }
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path = self.path.with_suffix(self.path.suffix + ".tmp")
+        payload = {
+            "date": self.today,
+            "calls": self.calls,
+            "blocked_until": self.blocked_until,
+            "daily_blocked": sorted(self.daily_blocked),
+            "events": self.events,
+        }
+        temporary_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        temporary_path.replace(self.path)
+
+    def remaining_daily(self, model: str) -> int | None:
+        limit = self.limits.get(model, {}).get("rpd", 0)
+        return max(0, limit - self.calls.get(model, 0)) if limit > 0 else None
+
+    def model_order(self, models: List[str]) -> List[str]:
+        return sorted(
+            models,
+            key=lambda model: (
+                model not in self.daily_blocked,
+                self.remaining_daily(model) is None,
+                self.remaining_daily(model) or 0,
+                self.limits.get(model, {}).get("rpm", 0),
+            ),
+            reverse=True,
+        )
+
+    def prepare_request(self, model: str, estimated_tokens: int) -> None:
+        limits = self.limits.get(model, {})
+        rpd = limits.get("rpd", 0)
+        if model in self.daily_blocked or (rpd > 0 and self.calls.get(model, 0) >= rpd):
+            self.daily_blocked.add(model)
+            self.save()
+            raise GeminiQuotaUnavailableError(f"{model} daily request quota exhausted")
+
+        now = time.time()
+        cooldown = self.blocked_until.get(model, 0)
+        if cooldown > now:
+            raise GeminiQuotaUnavailableError(
+                f"{model} rate limited; cooldown remains {cooldown - now:.1f}s"
+            )
+
+        rpm = limits.get("rpm", 0)
+        tpm = limits.get("tpm", 0)
+        while True:
+            events = self.events.setdefault(model, [])
+            events[:] = [event for event in events if now - event["at"] < 60]
+            request_full = rpm > 0 and len(events) >= rpm
+            tokens_full = tpm > 0 and sum(event["tokens"] for event in events) + estimated_tokens > tpm
+            if not request_full and not tokens_full:
+                return
+            if tokens_full and estimated_tokens > tpm:
+                raise GeminiQuotaUnavailableError(
+                    f"{model} request exceeds the configured {tpm} TPM budget"
+                )
+            wait_until = min(event["at"] + 60 for event in events)
+            delay = max(0.1, wait_until - now + 0.1)
+            print(
+                f"Quota pacing: waiting {delay:.1f}s for {model} "
+                f"(RPM={rpm or 'unlimited'}, TPM={tpm or 'unlimited'})"
+            )
+            time.sleep(delay)
+            now = time.time()
+
+    def record_attempt(self, model: str, estimated_tokens: int) -> None:
+        now = time.time()
+        self.calls[model] = self.calls.get(model, 0) + 1
+        self.events.setdefault(model, []).append({"at": now, "tokens": float(estimated_tokens)})
+        self.save()
+
+    def record_usage(self, model: str, actual_tokens: int) -> None:
+        events = self.events.get(model, [])
+        if events:
+            events[-1]["tokens"] = float(max(0, actual_tokens))
+            self.save()
+
+    def record_rate_limit(self, model: str, detail: str) -> None:
+        normalized = detail.lower().replace("_", " ")
+        if any(marker in normalized for marker in ("per day", "daily", "requests/day", "requests per day")):
+            self.daily_blocked.add(model)
+        else:
+            self.blocked_until[model] = time.time() + 60
+        self.save()
 
 
 def run(cmd: List[str]) -> str:
@@ -578,7 +723,18 @@ def fetch_available_models(api_key: str) -> List[GeminiModelInfo]:
         if not name:
             continue
         methods = [str(x) for x in item.get("supportedGenerationMethods", []) if str(x).strip()]
-        out.append(GeminiModelInfo(name=name, supported_methods=methods))
+        out.append(
+            GeminiModelInfo(
+                name=name,
+                supported_methods=methods,
+                input_token_limit=int(item["inputTokenLimit"])
+                if str(item.get("inputTokenLimit", "")).isdigit()
+                else None,
+                output_token_limit=int(item["outputTokenLimit"])
+                if str(item.get("outputTokenLimit", "")).isdigit()
+                else None,
+            )
+        )
     return out
 
 
@@ -629,6 +785,9 @@ def gemini_translate(
     target_locale: str,
     protected_terms: List[str],
     content_scope: str = "body",
+    quota_tracker: GeminiQuotaTracker | None = None,
+    model_limits: Dict[str, Dict[str, int]] | None = None,
+    model_context: Dict[str, GeminiModelInfo] | None = None,
 ) -> Tuple[str, str]:
     if not models:
         raise RuntimeError("no Gemini models configured")
@@ -636,12 +795,13 @@ def gemini_translate(
     if not text.strip():
         return text, models[0]
 
+    prompt = build_prompt(text=text, target_locale=target_locale, protected_terms=protected_terms)
     payload = {
         "contents": [
             {
                 "parts": [
                     {
-                        "text": build_prompt(text=text, target_locale=target_locale, protected_terms=protected_terms)
+                        "text": prompt
                     }
                 ]
             }
@@ -649,7 +809,7 @@ def gemini_translate(
         "generationConfig": {
             "temperature": 0.1,
             "topP": 0.9,
-            "maxOutputTokens": 8192
+            "maxOutputTokens": 8192,
         }
     }
 
@@ -664,10 +824,42 @@ def gemini_translate(
         retry_base_seconds = 1.5
 
     for idx, model in enumerate(models):
+        context_info = (model_context or {}).get(model)
+        limits = (model_limits or {}).get(model, {})
+        max_output_tokens = 8192
+        if context_info and context_info.input_token_limit:
+            estimated_input_tokens = (len(prompt) + 1) // 2
+            if estimated_input_tokens > context_info.input_token_limit:
+                last_error = (
+                    f"{model}: prompt estimate {estimated_input_tokens} exceeds "
+                    f"context input limit {context_info.input_token_limit}"
+                )
+                print(f"WARN: {last_error}; trying a smaller/fallback request", file=sys.stderr)
+                continue
+        if context_info and context_info.output_token_limit:
+            max_output_tokens = min(8192, context_info.output_token_limit)
+        payload["generationConfig"]["maxOutputTokens"] = max_output_tokens
+        estimated_tokens = (
+            (len(prompt) + 1) // 3
+            + min(
+                max_output_tokens,
+                max(128, int(len(text) / 1.5)),
+            )
+        )
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
         resp = None
+        model_unavailable = False
         for attempt in range(max_retries + 1):
+            if quota_tracker:
+                try:
+                    quota_tracker.prepare_request(model, estimated_tokens)
+                except GeminiQuotaUnavailableError as exc:
+                    last_error = str(exc)
+                    print(f"WARN: {exc}; trying next model", file=sys.stderr)
+                    model_unavailable = True
+                    break
+                quota_tracker.record_attempt(model, estimated_tokens)
             try:
                 resp = requests.post(url, json=payload, timeout=120)
             except requests.RequestException as exc:
@@ -696,6 +888,8 @@ def gemini_translate(
 
             break
 
+        if model_unavailable:
+            continue
         if resp is None:
             raise RuntimeError(f"unable to get response from Gemini model '{model}'")
 
@@ -708,6 +902,8 @@ def gemini_translate(
 
             if resp.status_code == 429:
                 short_detail = detail[:180] if detail else "quota/rate exhausted"
+                if quota_tracker:
+                    quota_tracker.record_rate_limit(model, detail)
                 if idx < len(models) - 1:
                     print(
                         f"WARN: Gemini model '{model}' exhausted quota/rate ({short_detail}); trying next candidate",
@@ -740,6 +936,11 @@ def gemini_translate(
             resp.raise_for_status()
 
         data = resp.json()
+        usage = data.get("usageMetadata", {})
+        if quota_tracker and isinstance(usage, dict):
+            actual_tokens = usage.get("totalTokenCount")
+            if isinstance(actual_tokens, int):
+                quota_tracker.record_usage(model, actual_tokens)
 
         candidates = data.get("candidates") or []
         if not candidates:
@@ -899,6 +1100,7 @@ def main() -> int:
     model_candidates = [model] + [m for m in build_model_candidates(preferred_model, configured_cascade) if m != model]
     strict_translation = os.getenv("TRANSLATION_STRICT", "").strip().lower() in {"1", "true", "yes"}
 
+    available_models: List[GeminiModelInfo] = []
     try:
         available_models = fetch_available_models(api_key)
         available_generative = [
@@ -920,10 +1122,7 @@ def main() -> int:
                 if matched and matched not in filtered:
                     filtered.append(matched)
             if filtered:
-                for candidate in available_generative:
-                    if candidate.startswith("gemini") and candidate not in filtered:
-                        filtered.append(candidate)
-                model_candidates = filtered[:10]
+                model_candidates = filtered
             else:
                 preferred_available = [m for m in available_generative if m.startswith("gemini")]
                 model_candidates = preferred_available[:5] if preferred_available else available_generative[:5]
@@ -931,7 +1130,34 @@ def main() -> int:
         print(f"WARN: unable to filter model candidates by ListModels: {exc}", file=sys.stderr)
 
     print(f"Using Gemini model: {model_candidates[0]}")
-    print(f"Gemini cascade order: {', '.join(model_candidates)}")
+    model_limits: Dict[str, Dict[str, int]] = {}
+    for entry in configured_cascade:
+        if isinstance(entry, dict):
+            model_name = model_from_cascade_entry(entry)
+            model_limits[model_name] = {
+                key: int(entry[key])
+                for key in ("rpm", "tpm", "rpd")
+                if str(entry.get(key, "")).isdigit() and int(entry[key]) > 0
+            }
+
+    model_context: Dict[str, GeminiModelInfo] = {}
+    for candidate in model_candidates:
+        candidate_base = candidate.removesuffix("-latest")
+        for available_model in available_models:
+            available_base = available_model.name.removesuffix("-latest")
+            if candidate == available_model.name or candidate_base == available_base:
+                model_context[candidate] = available_model
+                if candidate not in model_limits:
+                    for configured_name, configured_quota in model_limits.items():
+                        if configured_name.removesuffix("-latest") == candidate_base:
+                            model_limits[candidate] = configured_quota
+                            break
+                break
+
+    TMP_DIR.mkdir(parents=True, exist_ok=True)
+    quota_tracker = GeminiQuotaTracker(TMP_DIR / "gemini-usage.json", model_limits)
+    model_candidates = quota_tracker.model_order(model_candidates)
+    print(f"Gemini cascade order (quota-aware): {', '.join(model_candidates)}")
 
     def translate_text(text: str, locale: str, scope: str = "body") -> str:
         nonlocal model_candidates
@@ -942,13 +1168,16 @@ def main() -> int:
             locale,
             protected_terms,
             content_scope=scope,
+            quota_tracker=quota_tracker,
+            model_limits=model_limits,
+            model_context=model_context,
         )
         if used_model != model_candidates[0]:
             model_candidates = [used_model] + [m for m in model_candidates if m != used_model]
             print(f"Switched Gemini model: {used_model}")
+            model_candidates = quota_tracker.model_order(model_candidates)
         return translated
 
-    TMP_DIR.mkdir(parents=True, exist_ok=True)
     progress = TranslationProgress(TMP_DIR / "translation-progress.json")
     glossary_hash = hashlib.sha256(
         json.dumps(protected_terms, ensure_ascii=False, separators=(",", ":")).encode("utf-8")

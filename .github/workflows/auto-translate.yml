@@ -127,6 +127,11 @@ jobs:
           else
             git add -u -- .tmp/translation-progress.json || true
           fi
+          if [[ -f .tmp/gemini-usage.json ]]; then
+            git add -f .tmp/gemini-usage.json
+          else
+            git add -u -- .tmp/gemini-usage.json || true
+          fi
           [[ -f .tmp/synced-english-files.txt ]] && git add .tmp/synced-english-files.txt || true
           [[ -f .tmp/source-sync-report.json ]] && git add .tmp/source-sync-report.json || true
           [[ -f .tmp/catalog-files.txt ]] && git add .tmp/catalog-files.txt || true
