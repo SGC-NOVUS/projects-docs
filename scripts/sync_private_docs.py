@@ -305,6 +305,15 @@ def resolve_local_repository(source: SourceSpec, local_root: pathlib.Path | None
     return target
 
 
+def has_accessible_local_path(source: SourceSpec) -> bool:
+    if not source.local_path:
+        return False
+    try:
+        return pathlib.Path(source.local_path).expanduser().is_dir()
+    except OSError:
+        return False
+
+
 def relative(path: pathlib.Path) -> str:
     return str(path.relative_to(ROOT)).replace("\\", "/")
 
@@ -346,7 +355,7 @@ def main() -> int:
         try:
             if local_root is not None:
                 repo_dir = resolve_local_repository(source, local_root)
-            elif source.local_path and pathlib.Path(source.local_path).expanduser().is_dir():
+            elif has_accessible_local_path(source):
                 repo_dir = resolve_local_repository(source, None)
             else:
                 repo_dir = clone_repository(source, token, clone_root)
