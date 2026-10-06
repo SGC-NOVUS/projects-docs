@@ -1,21 +1,6 @@
 {
   "version": 1,
   "entries": {
-    "4a00dcbbcddd51b1ef4b8d4901e081ebaaeddd9df736dda12fb33d148ebb9430": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "Огляд архітектури: Novus-Life"
-    },
-    "930ed47268acdf6388238339d819a5dd153d72cf607993b24e388d4021826569": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "**Novus Life** — це приватна, автономна (offline-first) платформа для керування комунальними та домашніми витратами, розроблена та підтримувана компанією **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську..."
-    },
-    "688bc7fe6d4a59512692b0aa08645159f54516ed407a3aab43439f4afcdfe56f": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "# Огляд архітектури: Novus Life\n\n**Novus Life** — це приватна утиліта з пріоритетом автономної роботи (offline-first) та платформа для керування домашніми витратами, розроблена та підтримувана **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську криптографічну ізоляцію з автономною серверною інфраструктурою.\n\n---\n\n## 1. Високорівнева архітектура\n\nСистема працює за **гібридною моделлю зберігання та пріоритету автономної роботи (Hybrid Storage & Offline-First Model)**:\n1. **Первинний клієнтський шар (IndexedDB через Dexie.js)**:\n   - Усі безпосередні взаємодії, введення показників лічильників, оцінки тарифів та перегляд історії виконуються безпосередньо з локальною IndexedDB.\n   - Захищено від очищення кешу на рівні ОС за допомогою **Persistent Storage API** (`navigator.storage.persist()`).\n   - Забезпечує 100% оперативну спроможність в автономних середовищах (наприклад, підвалах, комунікаційних шахтах, відключених мережах).\n2. **Шар синхронізації сервера (Self-Hosted VPS)**:\n   - Створено на базі **Node.js 22+ (Express + pg driver)** та **PostgreSQL 16**.\n   - Доступно через суворо внутрішнє проксіювання за Nginx у межах домену `https://novus-life.online/api/*`.\n   - Дані фіксуються в атомарних SQL-транзакціях (`BEGIN ... COMMIT`), щоб запобігти станам часткової синхронизації.\n   - Усі реляційні сутності використовують первинні ключі **UUIDv7** (RFC 9562) для індексування у порядку міток часу без фрагментації сторінок B-Tree.\n3. **Шар резервного копіювання (Google Drive `appDataFolder`)**:\n   - Опціональна синхронізація зашифрованих архівів за допомогою прихованої папки Google Drive `appDataFolder` (`https://www.googleapis.com/auth/drive.appdata`).\n   - Ізольовано від кореневих файлів користувача, що запобігає випадковому видаленню вручну.\n\n```\n+-------------------------------------------------------------------------+\n|                              CLIENT DEVICE                              |\n|                                                                         |"
-    },
     "24bd597e35b419ac9ffbeae263f7172444dd433dfcd37de1ea808a1c10847405": {
       "source": "content/novus-life/novus-life-general/security.en.md",
       "locale": "uk",
@@ -36,45 +21,10 @@
       "locale": "uk",
       "translation": "Статус: ВИКОНАНО ТА ЗАБЛОКОВАНО (Базова лінія v0.2.0, 2026-09-25)"
     },
-    "97f6375d1cb85528c9e98f651dee873c5209dc34b44ef8c2fa76cf737decd8b6": {
-      "source": "content/novus-os/agent-core-general/api.en.md",
-      "locale": "ru",
-      "translation": "NOVUS Agent-Core: Справочник по gRPC API"
-    },
-    "344ec531abdb35d238c0723f6b448fc47117387f0b7c6547b74d29e6037a68bf": {
-      "source": "content/novus-os/agent-core-general/api.en.md",
-      "locale": "ru",
-      "translation": "**Источник контракта:** proto/novus.proto и proto/novus_runtime_surface.proto. Номера полей, структуры сообщений и методы сервисов в этих файлах являются авторитетными. Эта страница представляет собой..."
-    },
-    "0e6746b9e02ef3a6da5efffa65e8afd72a41911849472df194e47ed7cbe22f94": {
-      "source": "content/novus-os/agent-core-general/api.en.md",
-      "locale": "ru",
-      "translation": "# NOVUS Agent-Core: gRPC API Reference\n\n**Contract source:** `proto/novus.proto` и `proto/novus_runtime_surface.proto`. Номера полей, структуры сообщений и методы сервисов в этих файлах являются каноническими. Эта страница представляет собой безопасный справочник по навигации и не заменяет сгенерированные клиенты protobuf.\n\n## Transport And Access\n\n- Транспортом является gRPC поверх TLS.\n- Стандартные привилегированные вызовы содержат метаданные `x-request-timestamp`, `x-signature` и `x-panel-uuid`.\n- Агент применяет блокировку связанной панели, проверку актуальности запроса, защиту от повторного воспроизведения (replay), лимиты частоты запросов (rate limits) и политику аудита перед отправкой привилегированных вызовов.\n- Спаривание (pairing) и стандартные проверки здоровья gRPC являются исключениями для начальной загрузки (bootstrap) и проверки работоспособности (liveness). Не реализуйте клиент только на основе этого документа; используйте поддерживаемый транспорт Panel или сгенерированную интеграцию protobuf."
-    },
     "20d1cf38ad2c402849716a3784bcdc83ab88eac4ee35a56f2f7ead967757a2c2": {
       "source": "content/novus-os/agent-core-getting-started/getting-started-readme.en.md",
       "locale": "uk",
       "translation": "Початок роботи з NOVUS Agent"
-    },
-    "e207b5820984ea3d8123888c833f7852549a086e840af73cf0988119f35cfd2b": {
-      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-      "locale": "uk",
-      "translation": "Маніфест екосистеми NOVUS-OS"
-    },
-    "864671d15cb81e65edcab7c035ff927a2d2ef336805ca2557321982ea88b8afc": {
-      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-      "locale": "uk",
-      "translation": "**Status:** нормативний міжрепозиторний архітектурний контракт **Scope:** panel-core, agent-core, and installer **Canonical source:** цей документ створено в panel-core/docs/..."
-    },
-    "8c552d2a3100936ef2e9980709b07ab78fd1d37d8eaa4656fb4e0964bb8599c9": {
-      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-      "locale": "uk",
-      "translation": "# Маніфест екосистеми NOVUS-OS\n\n**Статус:** нормативний міжрепозиторний архітектурний контракт  \n**Область застосування:** `panel-core`, `agent-core` та `installer`  \n**Канонічне джерело:** цей документ створено у `panel-core/docs/architecture/` та синхронізовано досліввно до кореня кожного репозиторію.\n\n## 1. Бачення продукту та архітектурна філософія\n\nNOVUS-OS — це Web-OS для керування керованою інфраструктурою через єдину контрольну поверхню, нативну для браузера. Вона замінює фрагментовані зовнішні інструменти адміністрування, такі як WinSCP та PuTTY, на робочі процеси з перевіркою прав: керування файлами, доступ до термінала, життєвий цикл служб та контейнерів, мережі, резервні копії, вебсайти, бази даних, телеметрія та адміністрування безпеки.\n\nПродукт має два взаємодоповнювальні режими інтерфейсу користувача:\n\n| Режим | Призначення |\n| --- | --- |\n| **Dashboard** | Швидкий операційний огляд: стан здоров'я, телеметрія, сповіщення, черги, інвентаризація та високочастотні дії. |\n| **WebDesktop** | Постійний робочий простір з кількома інструментами для автентифікованих операторів, з маршрутизованими панелями для файлів, терміналів, екземплярів, вебсайтів, баз даних та адміністрування. |\n\nФронтенд є браузерним додатком з оболонкою, хеш-маршрутизацією, ледаче завантажуваними функціональними модулями Vue, спільними службами середовища виконання UI, i18n та підтримкою життєвого циклу PWA. PWA є властивістю доставки та стійкості панелі UI; він ніколи не передає повноваження хоста браузеру.\n\nАрхітектура дотримується суворого розділення на Control-Plane, Data-Plane та завантаження (bootstrap):\n\n1. Панель вирішує, *хто може що запитувати*, зберігає намір та стан, а також представляє результати.\n2. Agent виконує привілейовану локальну роботу на хості лише після автентифікованого транспортного запиту.\n3. Installer готує хост один раз, передає постійне володіння Panel та Agent, а потім видаляє власну завантажувальну поверхню."
-    },
-    "4c5204ea16fdebbca206872d1973280900718e4b31a416dcbc9f12ee84263124": {
-      "source": "content/novus-os/panel-core-architecture/architecture-ecosystem-manifest.en.md",
-      "locale": "uk",
-      "translation": "## 2. Матриця тристоронніх меж\n\n| Репозиторій / роль | Дозволено та належить | Суворо заборонено |\n| --- | --- | --- |\n| **`panel-core` - Мозок / Control-Plane** | PHP-додаток, Vue/PWA UI, стан продукту на базі PostgreSQL, оцінка політик IAM/OIM, маршрутизація API, оркестрація, журнали аутентифікації/аудиту, наміри команд, метадані з'єднань, бізнес-правила та представлення результатів Agent. | Пряме адміністрування хоста на рівні root; пряме використання Docker socket; пряма мутація файлової системи хоста; володіння локальним PTY; вбудовування привілейованих робочих процесів Bash або `sudo` як заміна Agent RPC. Новий код повинен використовувати фасад Agent та типизовані транспортні контракти. |\n| **`agent-core` - Руки і ноги / Data-Plane** | Довготривалий демон на Go, автентифіковані службі gRPC, зонди хоста, операції з Docker та системою, примусове застосування VFS, операції з файловою системою контейнерів, потокове передавання PTY, збір телеметрії та керування канонічними томами екземплярів. | Веб-інтерфейс, сеансові потоки / потоки автентифікації браузера, рішення щодо політик IAM/OIM продукту, стан control-plane PostgreSQL, оркестрація бізнес-процесів або пряме зв'язування з внутрішніми компонентами Panel та схемою бази даних. |\n| **`installer` - Ефемерний бутстрапер** | Перевірка перед запуском виключно для root, встановлення залежностей, завантаження та перевірка версій артефактів випусків, початкове розгортання / конфігурація, початкові секрети / маніфест бутстрапу, прогрес встановлення в терміналі та перевірка працездатності після встановлення. | Перетворення на постійну службу, виконання ролі середовища виконання Panel, збереження облікових даних користувача після завершення, реалізація поточних операцій життєвого циклу хоста або залишення на успішному робочому хості. |"
     },
     "5519ea15a3bfa2f22db0ad14b7465a3d2cab3130406f20e2da6da33ace54f6d1": {
       "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
@@ -100,31 +50,6 @@
       "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
       "locale": "uk",
       "translation": "## Сигнали зростання (Дельта останнього знімка)\n\n- Поточний коміт знімка: 45dee3385fb1\n- Попередній коміт знімка: 58ca53a5af1c\n| Метрика | Попередній | Поточний | Дельта | Дельта % | Поріг попередження | Поріг помилки | Сигнал |\n|---|---:|---:|---:|---:|---:|---:|---|\n| totalJsBytes | 4.73 MiB (4956212) | 3.98 MiB (4169148) | -787064 B (-787064) | -15.88% | 3% | 8% | OK |\n| totalCssBytes | 329.79 KiB (337706) | 337.02 KiB (345107) | +7.23 KiB (+7401) | +2.19% | 3% | 8% | OK |\n| largestJsBytes | 815.45 KiB (835021) | 893.07 KiB (914508) | +77.62 KiB (+79487) | +9.52% | 3% | 8% | FAIL |\n\n- Пороги зростання: WARN > 3% · FAIL > 8%\n- Попередження/помилки зростання: 1\n\n## Топ-12 JS-ресурсів\n\n| # | Ресурс | Розмір |\n|---:|---|---:|\n| 1 | assets/module-scheduler-CZur5sqe.js | 893.07 KiB (914508) |\n| 2 | assets/module-overview-mLB4L4ac.js | 493.69 KiB (505538) |\n| 3 | assets/module-bots-1oNhRVRo.js | 410.38 KiB (420229) |\n| 4 | assets/route-terminal-COvZnTO6.js | 384.14 KiB (393364) |\n| 5 | assets/module-services-ui-BTqkrwWW.js | 257.48 KiB (263656) |\n| 6 | assets/module-services-overlays-rX1BL-bO.js | 189.08 KiB (193618) |\n| 7 | assets/module-services-detail-tabs-CLG5LMCN.js | 126.85 KiB (129899) |\n| 8 | assets/module-matrices-CsV0k3rV.js | 124.09 KiB (127073) |\n| 9 | assets/module-websites-Bp8IJbaF.js | 122.24 KiB (125174) |\n| 10 | assets/module-profile-DmMj6HaN.js | 117.77 KiB (120593) |\n| 11 | assets/module-files-Dj_-xuZ0.js | 105.26 KiB (107783) |\n| 12 | assets/app-CaNKTWnY.js | 99.29 KiB (101675) |"
-    },
-    "3ae786f09e997d06ecdaba84a8dfc9a0ad6a9533b7c9409a0196265397e4026c": {
-      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-      "locale": "ru",
-      "translation": "Отчет о бюджете бандла фронтенда"
-    },
-    "439b935910f2dc9e3f0b3f78f09ed30adbdd8d726d1a1b838d2de2df676e6cb5": {
-      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-      "locale": "ru",
-      "translation": "Общий статус: PASS Статус панели управления: FAIL"
-    },
-    "4cab41abc8d55e0541658e444a6f71ce653d4408b766d93f6a8a3ad61831dcde": {
-      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-      "locale": "ru",
-      "translation": "# Отчет о бюджете фронтенд-бандла\n\nОбщий статус: PASS\nСтатус дашборда: FAIL\n\n## Источники\n\n- Манифест: /tmp/novus-panel-build/manifest.json\n- Базовая линия: tools/quality/frontend_bundle_budget_baseline.json\n- История: docs/architecture/frontend_bundle_budget_history.json\n- Процент запаса: 10\n- Исторические снимки: 8\n\n## Глобальные метрики\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | PASS |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | PASS |\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | PASS |\n\n## Бюджеты JS-точек входа\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | PASS |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | PASS |"
-    },
-    "733c284f6f577846f7fe274e618a7b499f2cddc8cb0efe12a5453dc6b9abb8b9": {
-      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-      "locale": "ru",
-      "translation": "## Бюджеты CSS точек входа\n\n| Метрика | Текущее | Лимит | Использование | Статус |\n|---|---:|---:|---:|---|\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | PASS |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | PASS |\n\n## Дашборд запаса бюджетов\n\n| Метрика | Текущее | Лимит | Использование | Оставшийся запас | Риск |\n|---|---:|---:|---:|---:|---|\n| largestJsBytes | 893.07 KiB (914508) | 896.59 KiB (918109) | 99.6% | +3.52 KiB (+3601) | CRITICAL |\n| entryJs:resources/js/setup.js | 51.18 KiB (52412) | 52.88 KiB (54150) | 96.8% | +1.70 KiB (+1738) | WATCH |\n| entryJs:resources/js/app.js | 99.29 KiB (101675) | 104.50 KiB (107011) | 95.0% | +5.21 KiB (+5336) | WATCH |\n| entryCss:resources/js/setup.js | 313.30 KiB (320819) | 332.55 KiB (340530) | 94.2% | +19.25 KiB (+19711) | WATCH |\n| entryCss:resources/js/app.js | 327.86 KiB (335729) | 348.57 KiB (356931) | 94.1% | +20.71 KiB (+21202) | WATCH |\n| totalCssBytes | 337.02 KiB (345107) | 359.33 KiB (367955) | 93.8% | +22.31 KiB (+22848) | WATCH |\n| totalJsBytes | 3.98 MiB (4169148) | 5.16 MiB (5410377) | 77.1% | +1.18 MiB (+1241229) | OK |\n\n- Пороговые значения риска использования: WATCH >= 92% · CRITICAL >= 98%\n- Метрик в состоянии WATCH/CRITICAL: 6\n- Метрик с недействительными лимитами: 0"
-    },
-    "823962d7c31d7774965334aadf9286c9d37e4b3982c5172bfdd1f3c41a4791eb": {
-      "source": "content/novus-os/panel-core-architecture/architecture-frontend-bundle-budget-report.en.md",
-      "locale": "ru",
-      "translation": "## Сигналы роста (Дельта последнего снимка)\n\n- Коммит текущего снимка: 45dee3385fb1\n- Коммит предыдущего снимка: 58ca53a5af1c\n| Метрика | Предыдущий | Текущий | Дельта | Дельта % | Порог предупреждения | Порог сбоя | Сигнал |\n|---|---:|---:|---:|---:|---:|---:|---|\n| totalJsBytes | 4.73 MiB (4956212) | 3.98 MiB (4169148) | -787064 B (-787064) | -15.88% | 3% | 8% | OK |\n| totalCssBytes | 329.79 KiB (337706) | 337.02 KiB (345107) | +7.23 KiB (+7401) | +2.19% | 3% | 8% | OK |\n| largestJsBytes | 815.45 KiB (835021) | 893.07 KiB (914508) | +77.62 KiB (+79487) | +9.52% | 3% | 8% | FAIL |\n\n- Пороги роста: WARN > 3% · FAIL > 8%\n- Предупреждения/сбои роста: 1\n\n## Топ-12 JS-ресурсов\n\n| # | Ресурс | Размер |\n|---:|---|---:|\n| 1 | assets/module-scheduler-CZur5sqe.js | 893.07 KiB (914508) |\n| 2 | assets/module-overview-mLB4L4ac.js | 493.69 KiB (505538) |\n| 3 | assets/module-bots-1oNhRVRo.js | 410.38 KiB (420229) |\n| 4 | assets/route-terminal-COvZnTO6.js | 384.14 KiB (393364) |\n| 5 | assets/module-services-ui-BTqkrwWW.js | 257.48 KiB (263656) |\n| 6 | assets/module-services-overlays-rX1BL-bO.js | 189.08 KiB (193618) |\n| 7 | assets/module-services-detail-tabs-CLG5LMCN.js | 126.85 KiB (129899) |\n| 8 | assets/module-matrices-CsV0k3rV.js | 124.09 KiB (127073) |\n| 9 | assets/module-websites-Bp8IJbaF.js | 122.24 KiB (125174) |\n| 10 | assets/module-profile-DmMj6HaN.js | 117.77 KiB (120593) |\n| 11 | assets/module-files-Dj_-xuZ0.js | 105.26 KiB (107783) |\n| 12 | assets/app-CaNKTWnY.js | 99.29 KiB (101675) |"
     },
     "1509c02700fb80aef5615da9960c20bae057477af58d38b0a794014337ad3db5": {
       "source": "content/novus-os/panel-core-functions/functions-services-full-inventory.en.md",
@@ -175,71 +100,6 @@
       "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
       "locale": "uk",
       "translation": "# Manual\n\nПосібник для адміністраторів та операторів панелі.\n\nManual охоплює продуктові та операційні сценарії. Машинно-генеровані technical inventories винесено в окремі технічні розділи.\n\n## Infrastructure\n\n- [infrastructure/nodes.md](infrastructure/nodes.md)\n- [infrastructure/instances.md](infrastructure/instances.md)\n- [infrastructure/network.md](infrastructure/network.md)\n- [infrastructure/vfs.md](infrastructure/vfs.md)\n- [infrastructure/network_channels.md](infrastructure/network_channels.md)\n- [infrastructure/matrices.md](infrastructure/matrices.md)\n- [infrastructure/novus_agent_client.md](infrastructure/novus_agent_client.md)"
-    },
-    "f7439bb4bd05b45f393167ad738d1b829ff023bca78dfa3a11ecf1c3ba57c588": {
-      "source": "content/novus-os/panel-core-security/security-hardening-guide.en.md",
-      "locale": "ru",
-      "translation": "Безопасность операций платформы"
-    },
-    "6ec57d2ce173596524c816746988803ec5af40ecfc3a374bcb78b796be26e7af": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "Ground truth: реализация Novus Flow.EDO"
-    },
-    "08ed031b27940d152042cd3da6fe7e08318c07728c08a0de26220c8ee2e07ee7": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "**Status:** внутренний статический аудит чекаута от 2026-09-28. **Scope:** маршруты фронтенда на Vue, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и окружение..."
-    },
-    "87637a5dfa99a70dbf04f33b1737ec8539eb582e3a58344e07dccfc503ec8b4e": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "# Ground truth: реализация Novus Flow.EDO\n\n**Статус:** внутренний статический аудит checkout по состоянию на 2026-09-28.\n**Область:** маршруты frontend на Vue, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и чтение окружения. Этот документ описывает реализованное поведение, а не соответствие стандартам или юридическую сертификацию.\n\n## Исполняемая структура\n\nПриложение представляет собой клиент браузера на Vue/Vite плюс API на Express, запускаемый через `tsx server/index.ts`.\n\n| Поверхность | Фактическая реализация |\n| --- | --- |\n| Интерфейс браузера | Vue 3, Vue Router, Pinia и службы клиентской подписи |\n| API | Express 5 на `PORT`, по умолчанию `3001` |\n| Персистентность | Prisma 7 с адаптером MariaDB; резервный `DATABASE_URL` — `mysql://novus:novus123@localhost:3306/novus_edo` |\n| Объектное хранилище | Cloudflare R2 через AWS S3 SDK с предварительно подписанными URL загрузки/скачивания |\n| Почта | Resend плюс рендеринг Vue Email |\n| Конвертер | Независимый HTTP-сервис на `127.0.0.1:4174`, запускающий LibreOffice (`SOFFICE_PATH` или `soffice`) |\n| Подпись в браузере | Закрытые ключи документов остаются на стороне браузера в соответствии с реализованной клиентской архитектурой; сервер сохраняет артефакты подписи и метаданные |\n\n`server/index.ts` загружает dotenv, отклоняет отсутствующий или фиктивный `JWT_SECRET` только при `NODE_ENV=production`, настраивает CORS с помощью `CORS_ORIGIN` или `*`, подключает маршруты и обслуживает `dist/` в production."
-    },
-    "7b3d2185112e6ed2d4a81d95cb804bffa0f4781288ad5da9776448564ce1f61c": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "## Маршруты браузера\n\n| Маршрут | Требование авторизации | Реализованное представление / назначение |\n| --- | --- | --- |\n| `/`, `/about`, `/privacy`, `/terms`, `/login`, `/register` | Нет | Публичные экраны, юридическая информация и экраны идентификации |\n| `/dashboard` | Да | В настоящее время использует повторно `Inbox.vue` |\n| `/documents`, `/documents/new`, `/documents/:id` | Да | Список документов, создание и рабочий процесс просмотра деталей |\n| `/contacts`, `/archive`, `/settings` | Да | Адресная книга, архив и настройки |\n| `/features`, `/pricing` | Нет | Перенаправление на `/` |\n\nНавигационный защитник (navigation guard) получает текущего пользователя при наличии токена и перенаправляет неаутентифицированные защищенные переходы на страницу `/login` (`src/router/index.ts`).\n\n## Каталог Express API\n\nВсе пути ниже имеют префикс `/api`, указанный в первом столбце.\n\n| Префикс | Операции | Аутентификация | Назначение |\n| --- | --- | --- | --- |\n| `/health` | `GET` | Нет | Базовый ответ о работоспособности процесса |\n| `/proxy` | `POST` | Нет | Бинарный прокси для трафика EUSign CMP/TSP/OCSP |\n| `/auth` | `POST /register`, `POST /login`, `GET /verify-email`, `GET /me` | `/me` требует bearer token | Вход по email/паролю и КЭП/ИНН, регистрация и верификация |\n| `/users` | `PUT /me`, `PUT /me/password` | Bearer token | Обновление профиля/email и установка/смена пароля |\n| `/organizations` | `GET /`, `POST /`, `GET /:id/members`, `POST /:id/members` | Bearer token | Членство в организациях и управление участниками |\n| `/documents` | `POST /`, `GET /`, `GET /tasks`, `POST /:id/sign`, `GET /:id/archive`, `GET /:id/download` | Bearer token | Устаревший рабочий процесс документов с локальной загрузкой |\n| `/v2/documents` | `GET /`, `GET /:id`, `POST /presigned-url`, `POST /`, `POST /:id/sign`, `DELETE /:id`, `POST /:id/cancel`, `GET /:id/archive` | Bearer token | Рабочий процесс DocumentPackage с хранилищем R2 и маршрутизацией участников |"
-    },
-    "62f8be53165f249ac64048045555d9607011c68df4c4bf3f243e9a6b87e13a3e": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "| `/public` | `POST /store-verification`, `GET /verify/:id`, `GET /verify/:id/protocol` | Эндпоинт сохранения опционально принимает bearer token; чтение является публичным | Публичная верификация подписи и скачивание протокола |\n| `/settings/document-types` | `GET`, `POST`, `POST /:id/toggle` | Bearer token | Глобальный реестр типов документов / реестр типов документов рабочего пространства |\n\nДля API отсутствует закоммиченный документ OpenAPI 3.1. Текущим HTTP-контрактом являются роутер и эти исходные файлы.\n\n## Поведение данных и объектного хранилища (object-storage)\n\nСуществуют два независимых пути персистентности документов:\n\n1. Устаревший `/api/documents` использует Multer `uploads/` и сохраняет локальные пути в базе данных. Скачивание оригинала считывает этот путь файловой системы; создание архива выполняется потоково из этого локального состояния.\n2. `/api/v2/documents` сохраняет метаданные пакета в Prisma и использует ключи объектов R2. Он выдает пятиминутный presigned URL для загрузки и выгружает файлы подписей / PAdES в R2 после того, как Multer принимает их локально.\n\nПубличная верификация сохраняет анонимные объекты по пути `unclaimed/<RNOKPP>/<document UUID>/...`; аутентифицированная отправка использует `individuals/<user ID>/documents/<verification ID>/...`. Создается или переиспользуется фиксированная системная учетная запись для анонимных сохраненных пакетов. Запросы на запись в R2 используют серверное шифрование `AES256`."
-    },
-    "d71db79edcb1e091eeed4f8d0bc057009b64eefef6affc8160b3c2098edbbbb6": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "## Реестр окружения\n\n| Переменная | Тип / по умолчанию | Где используется | Критичность при запуске / для функций |\n| --- | --- | --- | --- |\n| `NODE_ENV` | строка; production активирует проверку JWT и статический вывод | `server/index.ts` | Граница запуска |\n| `PORT` | целое число / строка; `3001` | `server/index.ts` | Граница запуска |\n| `DATABASE_URL` | URL MariaDB; небезопасный локальный запасной вариант указан выше | `server/db.ts` | Критично для функций постоянного хранения |\n| `JWT_SECRET` | секрет; в production должен отличаться от эталонного | `server/index.ts`, `server/middleware/auth.ts` | Критично для безопасности |\n| `ENCRYPTION_KEY` | секрет из 64 шестнадцатеричных символов; случайный запасной вариант процесса | `server/utils/crypto.ts` | Критично для безопасности и чтения данных |\n| `BLIND_INDEX_SECRET` | секрет; случайный запасной вариант процесса | `server/utils/crypto.ts` | Критично для непрерывности поиска/индексов |\n| `CORS_ORIGIN` | строка источника; `*` | `server/index.ts` | Граница безопасности |\n| `R2_ACCOUNT_ID`, `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PRESIGNED_EXPIRES_IN` | эндпоинт/учетные данные R2; срок действия `900` секунд | `server/storageService.ts` | Критично для функций v2/публичных объектов |\n| `RESEND_API_KEY`, `APP_URL` | секрет почты и URL; `APP_URL` по умолчанию `http://localhost:5173` в почтовой службе EDO | `server/emailService.ts` | Критично для функций доставки почты / ссылок |\n| `SOFFICE_PATH` | имя/путь исполняемого файла; `soffice` | `server/converter.mjs` | Критично для функций только службы конвертации |\n| `REDIS_HOST`, `REDIS_PORT` | чтение окружения на уровне локальной службы | кодовые пути воркера/очереди | Критично для функций только там, где запускается воркер очереди |"
-    },
-    "60edc3555c0147ba0cca5f5606d4782cb507b9d9f91f0d32a49079618c6d1013": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "Еталонні дані: реалізація Novus Flow.EDO"
-    },
-    "a4da0318852a4447056f0db79ea968c641fa2ce09ffe4791ac6d0143be6da695": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "**Статус:** внутрішній статичний аудит checkout від 2026-09-28. **Область:** маршрути Vue frontend, композиція сервера Express, персистентність Prisma/R2, криптографія, конвертер та environ..."
-    },
-    "d5f57f6e5d0d31fcbb8242395bb415d87179aebef5788a270ef2d567758ea152": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "# Ground truth: реалізація Novus Flow.EDO\n\n**Статус:** внутрішній статичний аудит чекауту станом на 2026-09-28.\n**Обсяг:** маршрути Vue frontend, композиція Express сервера, персистентність Prisma/R2, шифрування, конвертер та читання середовища. Цей документ описує реалізовану поведінку, а не сертифікацію на відповідність вимогам чи юридичну сертифікацію.\n\n## Виконувана структура\n\nДодаток складається з браузерного клієнта Vue/Vite та API Express, що запускається через `tsx server/index.ts`.\n\n| Поверхня | Фактична реалізація |\n| --- | --- |\n| Браузерний інтерфейс | Vue 3, Vue Router, Pinia та клієнтські служби підписання |\n| API | Express 5 на `PORT`, за замовчуванням `3001` |\n| Персистентність | Prisma 7 з адаптером MariaDB; запасний варіант `DATABASE_URL` — `mysql://novus:novus123@localhost:3306/novus_edo` |\n| Сховище об'єктів | Cloudflare R2 через AWS S3 SDK з попередньо підписаними URL-адресами завантаження/завантаження |\n| Пошта | Resend та рендеринг Vue Email |\n| Конвертер | Незалежна HTTP-служба на `127.0.0.1:4174`, що запускає LibreOffice (`SOFFICE_PATH` або `soffice`) |"
-    },
-    "7c70cb7edc3479b643d443c0d08adee636aa6bb5cd23b81c13d14de8cba2684b": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "| Підписування у браузері | Приватні ключі документів залишаються на стороні браузера відповідно до реалізованої клієнтської архітектури; сервер зберігає артефакти підпису та метадані |\n\n`server/index.ts` завантажує dotenv, відхиляє відсутній або стандартний `JWT_SECRET` лише за умов `NODE_ENV=production`, встановлює CORS з `CORS_ORIGIN` або `*`, підключає маршрути та роздає `dist/` у продакшені."
-    },
-    "6bab09f16637b7ca3c8eb8711ac0633d07cc735d3abf141023a5ef0b42c1eccd": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "# Ground truth: реалізація Novus Flow.EDO\n\n**Статус:** внутрішній статичний аудит чекауту станом на 2026-09-28.\n**Обсяг:** маршрути Vue frontend, композиція Express сервера, персистентність Prisma/R2, шифрування, конвертер та читання середовища. Цей документ описує реалізовану поведінку, а не сертифікацію на відповідність вимогам чи юридичну сертифікацію.\n\n## Виконувана структура\n\nДодаток складається з браузерного клієнта Vue/Vite та API Express, що запускається через `tsx server/index.ts`.\n\n| Поверхня | Фактична реалізація |\n| --- | --- |\n| Браузерний інтерфейс | Vue 3, Vue Router, Pinia та клієнтські служби підписання |\n| API | Express 5 на `PORT`, за замовчуванням `3001` |\n| Персистентність | Prisma 7 з адаптером MariaDB; запасний варіант `DATABASE_URL` — `mysql://novus:novus123@localhost:3306/novus_edo` |\n| Сховище об'єктів | Cloudflare R2 через AWS S3 SDK з попередньо підписаними URL-адресами завантаження/завантаження |\n| Пошта | Resend та рендеринг Vue Email |\n| Конвертер | Незалежна HTTP-служба на `127.0.0.1:4174`, що запускає LibreOffice (`SOFFICE_PATH` або `soffice`) |\n\n| Підписування у браузері | Приватні ключі документів залишаються на стороні браузера відповідно до реалізованої клієнтської архітектури; сервер зберігає артефакти підпису та метадані |\n\n`server/index.ts` завантажує dotenv, відхиляє відсутній або стандартний `JWT_SECRET` лише за умов `NODE_ENV=production`, встановлює CORS з `CORS_ORIGIN` або `*`, підключає маршрути та роздає `dist/` у продакшені."
-    },
-    "09c404513cc9b75f188b7430d9fc5e7006e420e0fadf2c03e6fca0aad085e682": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "uk",
-      "translation": "## Маршрути браузера\n\n| Маршрут | Вимога автентифікації | Реалізоване представлення / призначення |\n| --- | --- | --- |\n| `/`, `/about`, `/privacy`, `/terms`, `/login`, `/register` | Ні | Публічні екрани, юридична інформація та екрани ідентифікації |\n| `/dashboard` | Так | Наразі повторно використовує `Inbox.vue` |\n| `/documents`, `/documents/new`, `/documents/:id` | Так | Робочий процес списку, створення та перегляду деталей документів |\n| `/contacts`, `/archive`, `/settings` | Так | Адресна книга, архів та налаштування |\n| `/features`, `/pricing` | Ні | Перенаправлення на `/` |\n\nЗахисник навігації (navigation guard) отримує поточного користувача, якщо існує токен, і перенаправляє неавтентифіковані захищені переходи на `/login` (`src/router/index.ts`).\n\n## Каталог Express API\n\nУсі шляхи нижче мають префікс `/api`, зазначений у першому стовпчику.\n\n| Префікс | Операції | Автентифікація | Призначення |\n| --- | --- | --- | --- |\n| `/health` | `GET` | Ні | Базова відповідь про стан здоров'я процесу |\n| `/proxy` | `POST` | Ні | Бінарний проксі для трафіку EUSign CMP/TSP/OCSP |\n| `/auth` | `POST /register`, `POST /login`, `GET /verify-email`, `GET /me` | `/me` вимагає Bearer-токен | Вхід за електронною поштою/паролем та КЕП/РНОКПП, реєстрація та верифікація |\n| `/users` | `PUT /me`, `PUT /me/password` | Bearer-токен | Оновлення профілю/електронної пошти та встановлення/зміна пароля |\n| `/organizations` | `GET /`, `POST /`, `GET /:id/members`, `POST /:id/members` | Bearer-токен | Членство в організації та керування учасниками |\n| `/documents` | `POST /`, `GET /`, `GET /tasks`, `POST /:id/sign`, `GET /:id/archive`, `GET /:id/download` | Bearer-токен | Застарілий робочий процес документів із локальним завантаженням |\n| `/v2/documents` | `GET /`, `GET /:id`, `POST /presigned-url`, `POST /`, `POST /:id/sign`, `DELETE /:id`, `POST /:id/cancel`, `GET /:id/archive` | Bearer-токен | Робочий процес DocumentPackage зі сховищем R2 та маршрутизацією учасників |"
     }
   }
 }

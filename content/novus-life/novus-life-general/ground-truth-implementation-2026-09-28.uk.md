@@ -5,10 +5,10 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: 'Ground truth: реалізація Novus-Life'
-description: '**Status:** внутрішній статичний аудит процесу оформлення замовлення
-  (checkout) станом на 2026-09-28. **Scope:** маршрути Vue/PWA, бекенд на Express,
-  PostgreSQL, інтеграції з Google, електронна пошта, сховище браузера та середовищ...'
+title: 'Еталонні дані: реалізація Novus Life'
+description: '**Статус:** внутрішній статичний аудит checkout від 2026-09-28. **Обсяг:**
+  маршрути Vue/PWA, бекенд Express, PostgreSQL, інтеграції з Google, email, сховище
+  браузера та середовищ...'
 last_updated: '2026-10-05'
 source_locale: en
 locale: uk
@@ -17,76 +17,76 @@ source_branch: main
 source_path: docs/GROUND_TRUTH_IMPLEMENTATION_2026-09-28.md
 managed_by: sync_private_docs
 ---
-# Ground truth: Novus Life implementation
+# Джерело істини: реалізація Novus Life
 
-**Status:** внутрішній статичний аудит оформлення замовлення від 2026-09-28.
-**Scope:** Vue/PWA routes, Express backend, PostgreSQL, Google integrations, email, browser storage and environment configuration.
+**Статус:** внутрішній статичний аудит checkout від 2026-09-28.
+**Область аудиту:** маршрути Vue/PWA, бекенд Express, PostgreSQL, інтеграції Google, email, сховище браузера та конфігурація середовища.
 
-## Current architecture
+## Поточна архітектура
 
-Репозиторій не є шаблоном React, описаним у його кореневому README. Відстежувана реалізація:
+Репозиторій не є шаблоном React, описаним у його кореневому файлі README. Фактична реалізація:
 
-| Layer | Actual implementation |
+| Рівень | Фактична реалізація |
 | --- | --- |
-| Browser | Vue 3, Vite, Vue Router, Pinia, i18n та PWA assets |
-| Local client data | Browser storage/device capability services and domain stores for addresses, services, tariffs, meter readings, payments and reminders |
-| API | Express на `0.0.0.0`, `PORT` за замовчуванням `3001`; CORS origin це `*`; тіла JSON/urlencoded обмежені до 15 MiB |
-| Persistence | PostgreSQL через `pg` Pool; сервер відмовляється слухати після 10 невдалих спроб підключення з інтервалом у 2 секунди |
-| Identity | Email/password JWT plus Google OAuth; час життя bearer JWT становить 60 днів |
-| Cloud backup | Google Drive `appDataFolder`, receiving an opaque encrypted payload from the client |
-| Mail | Resend; відсутність API-ключа перемикає пошту на макет логування, який повертає успіх |
+| Браузер | Vue 3, Vite, Vue Router, Pinia, i18n та ресурси PWA |
+| Локальні дані клієнта | Сховище браузера / сервіси можливостей пристрою та доменні сховища для адрес, послуг, тарифів, показань лічильників, платежів та нагадувань |
+| API | Express на `0.0.0.0`, `PORT` за замовчуванням `3001`; CORS origin — `*`; JSON/urlencoded тіла запитів обмежені 15 MiB |
+| Персистентність | PostgreSQL через `pg` Pool; сервер припиняє спроби запуску після 10 невдалих спроб підключення з інтервалом у 2 секунди |
+| Ідентифікація | JWT з email/паролем плюс Google OAuth; термін дії bearer JWT становить 60 днів |
+| Хмарне резервне копіювання | Google Drive `appDataFolder`, що отримує непрозоре зашифроване корисне навантаження від клієнта |
+| Пошта | Resend; відсутність API-ключа перемикає надсилання пошти на заглушку з логуванням, яка повертає успішний результат |
 
-## Навігація браузера та модулі
+## Навігація в браузері та модулі
 
 | Область маршруту | Реалізовані модулі |
 | --- | --- |
-| Public | Landing, privacy, terms, about, auth |
-| `/app` | Dashboard, profile, utilities, tariffs, addresses, services, payments, reminders, analytics, settings |
+| Публічна | Лендінг, приватність, умови, про нас, авторизація |
+| `/app` | Дашборд, профіль, комунальні послуги, тарифи, адреси, послуги, платежі, нагадування, аналітика, налаштування |
 | Сумісність | Застарілі короткі URL-адреси перенаправляють на `/app/*`; невідомі шляхи перенаправляють на `/` |
-| Поведінка PWA | Landing перенаправляє на `/app` при запуску з автономного контексту / PWA |
+| Поведінка PWA | Лендінг перенаправляє на `/app` при запуску в контексті standalone/PWA |
 
-Клієнтський API-клієнт використовує відносні виклики same-origin, додає bearer token із `localStorage` та викидає виняток для відповідей, відмінних від 2xx (`src/core/services/api-client.ts`).
+Фронтенд-клієнт API використовує відносні виклики same-origin, додає bearer-токен з `localStorage` та викидає виняток у разі відповідей, відмінних від 2xx (`src/core/services/api-client.ts`).
 
 ## Каталог API
 
 | Префікс | Операції | Автентифікація | Призначення |
 | --- | --- | --- | --- |
-| `/api/health` | `GET` | Ні | Корисне навантаження стану процесу API |
-| `/api/auth` | `POST /register`, `POST /login`, `GET /me`, `PUT /profile`, `POST /password/set`, `POST /password/change`, `POST /verify-email/request`, `GET /verify-email/confirm`, `GET /google/url`, `GET /google/callback`, `POST /google/exchange` | Змішана; профіль/пароль/запит підтвердження вимагають bearer token | Ідентифікація, профіль, підтвердження електронної пошти та Google OAuth |
-| `/api/sync` | `GET /`, `POST /` | Bearer token | Відновлення та транзакційне оновлення/вставка (upsert) адреסים користувача, послуг, тарифів, комунальних послуг, регулярних платежів і нагадувань |
-| `/api/drive` | `GET /status`, `POST /backup`, `GET /restore` | Bearer token | Зберігання/отримання зашифрованого на клієнті резервного копіювання в Google Drive appDataFolder |
+| `/api/health` | `GET` | Ні | Дані про стан працездатності процесу API |
+| `/api/auth` | `POST /register`, `POST /login`, `GET /me`, `PUT /profile`, `POST /password/set`, `POST /password/change`, `POST /verify-email/request`, `GET /verify-email/confirm`, `GET /google/url`, `GET /google/callback`, `POST /google/exchange` | Змішана; запити profile/password/verify вимагають bearer-токен | Ідентифікація, профіль, підтвердження email та Google OAuth |
+| `/api/sync` | `GET /`, `POST /` | Bearer-токен | Відновлення та транзакційне додавання/оновлення (upsert) адрес користувача, послуг, тарифів, комунальних послуг, регулярних платежів та нагадувань |
+| `/api/drive` | `GET /status`, `POST /backup`, `GET /restore` | Bearer-токен | Збереження/отримання зашифрованої клієнтом резервної копії в appDataFolder у Google Drive |
 
-Сервер монтує ці групи в `server/src/index.ts`. У репозиторії немає специфікації OpenAPI 3.1.
+Сервер монтує ці групи в `server/src/index.ts`. У репозиторії відсутня специфікація OpenAPI.
 
-## Персистентність та поведінка у разі збоїв
+## Персистентність та поведінка при збоях
 
-`checkDbConnection()` повторює спробу виконання `SELECT NOW()` десять разів і виконує аддитивні міграції `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` після успішного з'єднання. Невдала перевірка бази даних завершує процес перед викликом `listen()`.
+`checkDbConnection()` повторює спробу виконання `SELECT NOW()` десять разів і запускає адитивні міграції `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` після успішного підключення. Помилка перевірки бази даних завершує процес перед викликом `listen()`.
 
-`POST /api/sync` загортає всі операції upsert для таблиць у транзакцію PostgreSQL. У разі помилки вона виконує `ROLLBACK`, повертає `500` і завжди звільняє клієнта пулу. API обробляє локальні ідентифікатори клієнтської сторони як вхідні дані, мапує їх на значення UUIDv7 та заповнює відсутні доменні поля за замовчуванням під час імпорту.
+`POST /api/sync` обгортає всі операції upsert для таблиць у транзакцію PostgreSQL. У разі помилки виконується `ROLLBACK`, повертається `500` і завжди вивільняється клієнт пулу. API сприймає локальні ID на стороні клієнта як вхідні дані, відображає їх на значення UUIDv7 та встановлює значення за замовчуванням для відсутніх доменних полів під час імпорту.
 
-Резервне копіювання Google Drive зберігає наданий `encryptedPayload` як `novus_life_vault.json.enc` у прихованій пачці користувача `appDataFolder`; сервер не розшифровує цей корисний навантаження (payload). Відсутність токена оновлення (refresh token) повертає звичайну відповідь "not connected" / `500` залежно від ендпоінту. Збої OAuth проявляються як `500` під час обміну та перенаправляють з параметрами запиту помилки у потоці зворотного виклику (callback flow).
+Резервне копіювання в Google Drive зберігає наданий `encryptedPayload` як `novus_life_vault.json.enc` у прихованій папці користувача `appDataFolder`; сервер не дешифрує корисне навантаження. Відсутність refresh token повертає звичайну відповідь "not connected"/`400` залежно від ендпоінту. Помилки OAuth відображаються як `500` під час обміну та як перенаправлення з параметрами запиту помилки у процесі зворотного виклику (callback flow).
 
-Запити на постійне зберігання у браузері (persistent-storage) виконуються за принципом «найкращих зусиль» (best effort). Відхилений запит `navigator.storage.persist()` повертається як результат для користувача про те, що сховище не є постійним; він не блокує застосунок (`src/core/services/storage-manager.ts`).
+Запити браузера на персистентне зберігання виконуються за принципом best effort. Відхилений запит `navigator.storage.persist()` повертається як результат без збереження, що відображається користувачеві; це не блокує роботу застосунку (`src/core/services/storage-manager.ts`).
 
 ## Реєстр середовища
 
 | Змінна | Тип/значення за замовчуванням | Де використовується | Критичність |
 | --- | --- | --- | --- |
 | `PORT` | ціле число; `3001` | `server/src/index.ts` | Межа запуску |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `db`, `5432`, `novus_life`, `novus_user`, `novus_secret_pass_2026` | `server/src/db.ts` | **Критично** для персистентності у прод-середовищі; резервний пароль є небезпечним |
-| `JWT_SECRET` | секрет; `novus_life_default_jwt_secret_dev` | `server/src/auth.ts` | **Критично** для ідентифікації у прод-середовищі; небезпечне резервне значення активне, якщо пропущено |
-| `APP_URL` | URL; `https://novus-life.online` | Перенаправлення автентифікації та посилання в електронних листах | Критично для функціоналу OAuth/посилань у пошті |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | рядки; порожньо | Потоки оновлення Google OAuth та Drive | Критично лише для функцій Google |
-| `RESEND_API_KEY` | секрет; порожньо | Ініціалізація Resend | Критично для фактичної доставки пошти; відсутній ключ активує імітацію логування |
-| `EMAIL_FROM_AUTH`, `EMAIL_FROM_NOTIFY`, `EMAIL_REPLY_TO` | рядки відправника зі значеннями продукту за замовчуванням | `server/src/services/email.ts` | Критично лише для брендування/доставки електронної пошти |
-| `VITE_APP_NAME`, `VITE_APP_URL` | значення шаблону фронтенду | `.env.example` | Не знайдено жодного поточного споживача `import.meta.env` у `src` |
-| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | значення шаблону фронтенду | `.env.example` | Не знайдено жодного поточного споживача `import.meta.env` у `src`; вони не є свідченням активного використання середовища виконання Supabase |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `db`, `5432`, `novus_life`, `novus_user`, `novus_secret_pass_2026` | `server/src/db.ts` | **Критично** для персистентності у прод-середовищі; резервний пароль є небезопасним |
+| `JWT_SECRET` | секрет; `novus_life_default_jwt_secret_dev` | `server/src/auth.ts` | **Критично** для ідентифікації у прод-середовищі; якщо не вказано, активний ненадійний запасний варіант |
+| `APP_URL` | URL; `https://novus-life.online` | Редиректи авторизації та посилання в електронних листах | Критично для функціоналу OAuth/посилань в пошті |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | рядки; порожньо | Google OAuth та потоки оновлення Google Drive | Критично для функціоналу лише для можливостей Google |
+| `RESEND_API_KEY` | секрет; порожньо | Ініціалізація Resend | Критично для фактичної доставки електронних листів; відсутній ключ активує логування мока |
+| `EMAIL_FROM_AUTH`, `EMAIL_FROM_NOTIFY`, `EMAIL_REPLY_TO` | рядки відправника з продуктовими значеннями за замовчуванням | `server/src/services/email.ts` | Критично для функціоналу лише для брендування/доставки електронної пошти |
+| `VITE_APP_NAME`, `VITE_APP_URL` | значення шаблону фронтенду | `.env.example` | У `src` не знайдено поточного споживача `import.meta.env` |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | значення шаблону фронтенду | `.env.example` | У `src` не знайдено поточного споживача `import.meta.env`; вони не є свідченням активного використання рантайму Supabase |
 
-`server/.env.example` існує та документує значення бази даних сервера, JWT, Google та електронної пошти. Кореневий файл `.env.example` документує лише Vite/Supabase/Google/email і пропускає змінні бекенду `PORT`, `DB_*`, `JWT_SECRET` та `APP_URL`; документація для оператора має вказувати на шаблон сервера для розгортання бекенду.
+`server/.env.example` існує та документує значення бази даних сервера, JWT, Google та електронної пошти. Кореневий файл `.env.example` документує лише Vite/Supabase/Google/email і пропускає бекенд-змінні `PORT`, `DB_*`, `JWT_SECRET` і `APP_URL`; документація для оператора має вказувати на шаблон сервера для розгортання бекенду.
 
-## Підтверджені прогалини в документації
+## Підтверджені пробіли в документації
 
-1. Замінити README кореневого шаблону React на документацію для Vue + Express + PostgreSQL.
-2. Додати довідник API, згенерований з трьох підключених маршрутизаторів Express.
-3. Видалити незахищені значення за замовчуванням для продакшну для JWT і пароля бази даних, або налаштувати відхилення при запуску поза середовищем розробки.
-4. Уточнити, що поточна синхронізація клієнта спрямована на self-hosted Express API; значення Supabase в кореневому шаблоні наразі не використовуються кодом браузера.
+1. Замініть README кореневого React-шаблону на документацію для Vue + Express + PostgreSQL.
+2. Додайте довідник API, згенерований з трьох підключених маршрутизаторів Express.
+3. Видаліть незахищені значення за замовчуванням у продакшн-середовищі для JWT і пароля бази даних, або налаштуйте процес запуску так, щоб він відхиляв їх поза середовищем розробки.
+4. Уточніть, що поточна синхронізація клієнта націлена на самостійно хощений (self-hosted) Express API; значення Supabase в кореневому шаблоні наразі не використовуються кодом у браузері.

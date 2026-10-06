@@ -15,13 +15,13 @@ source_branch: main
 source_path: docs/manual/README.md
 managed_by: sync_private_docs
 ---
-# Manual
+# Руководство
 
 Руководство для администраторов и операторов панели.
 
-Manual покрывает продуктовые и операционные сценарии. Машинно-генерируемые technical inventories вынесены в отдельные технические разделы.
+Руководство охватывает продуктовые и операционные сценарии. Машинно-генерируемые технические описи вынесены в отдельные технические разделы.
 
-## Infrastructure
+## Инфраструктура
 
 - [infrastructure/nodes.md](infrastructure/nodes.md)
 - [infrastructure/instances.md](infrastructure/instances.md)
@@ -31,20 +31,20 @@ Manual покрывает продуктовые и операционные с�
 - [infrastructure/matrices.md](infrastructure/matrices.md)
 - [infrastructure/novus_agent_client.md](infrastructure/novus_agent_client.md)
 
-## Resources
+## Ресурсы
 
 - [resources/databases.md](resources/databases.md)
 - [resources/backups.md](resources/backups.md)
 - [resources/file_gateways.md](resources/file_gateways.md)
 - [resources/monitoring.md](resources/monitoring.md)
 
-## System
+## Система
 
 - [system/users.md](system/users.md)
 - [system/scheduler.md](system/scheduler.md)
 - [system/novus_id.md](system/novus_id.md)
 - [system/security.md](system/security.md)
-- [system/permission_guard.md](system/permission_guard.md) — **NEW** Аудит и защита прав доступа
+- [system/permission_guard.md](system/permission_guard.md) — **НОВОЕ** Аудит и защита прав доступа
 - [system/settings.md](system/settings.md)
 - [system/profile.md](system/profile.md)
 - [system/service-desk.md](system/service-desk.md)
