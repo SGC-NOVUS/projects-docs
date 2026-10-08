@@ -100,36 +100,6 @@
       "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
       "locale": "uk",
       "translation": "# Manual\n\nПосібник для адміністраторів та операторів панелі.\n\nManual охоплює продуктові та операційні сценарії. Машинно-генеровані technical inventories винесено в окремі технічні розділи.\n\n## Infrastructure\n\n- [infrastructure/nodes.md](infrastructure/nodes.md)\n- [infrastructure/instances.md](infrastructure/instances.md)\n- [infrastructure/network.md](infrastructure/network.md)\n- [infrastructure/vfs.md](infrastructure/vfs.md)\n- [infrastructure/network_channels.md](infrastructure/network_channels.md)\n- [infrastructure/matrices.md](infrastructure/matrices.md)\n- [infrastructure/novus_agent_client.md](infrastructure/novus_agent_client.md)"
-    },
-    "4a00dcbbcddd51b1ef4b8d4901e081ebaaeddd9df736dda12fb33d148ebb9430": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "Огляд архітектури: Novus-Life"
-    },
-    "930ed47268acdf6388238339d819a5dd153d72cf607993b24e388d4021826569": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "**Novus Life** — це приватна utility та home expense management платформа з першочерговою підтримкою офлайн-режиму (offline-first), розроблена та підтримувана **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську..."
-    },
-    "688bc7fe6d4a59512692b0aa08645159f54516ed407a3aab43439f4afcdfe56f": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "# Architecture Overview: Novus Life\n\n**Novus Life** — це приватна утиліта з пріоритетом автономної роботи (offline-first) та платформа для керування домашніми витратами, розроблена та підтримувана компанією **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську криптографічну ізоляцію з автономною серверною інфраструктурою.\n\n---\n\n## 1. Високорівнева архітектура\n\nСистема працює за **гібридною моделлю зберігання та пріоритету автономної роботи (Hybrid Storage & Offline-First Model)**:\n1. **Первинний клієнтський шар (IndexedDB через Dexie.js)**:\n   - Усі негайні взаємодії, введення показників лічильників, оцінки тарифів та перегляд історії виконуються безпосередньо в локальній IndexedDB.\n   - Захищено від очищення кешу на рівні ОС за допомогою **Persistent Storage API** (`navigator.storage.persist()`).\n   - Забезпечує 100% операційну спроможність в автономних середовищах (наприклад, підвалах, шахтах комунікацій, відключених мережах).\n2. **Шар синхронізації сервера (Self-Hosted VPS)**:\n   - Створено на базі **Node.js 22+ (Express + pg driver)** та **PostgreSQL 16**.\n   - Доступно через суворо внутрішнє проксіювання за Nginx у межах домену `https://novus-life.online/api/*`.\n   - Дані фіксуються в атомарних SQL-транзакціях (`BEGIN ... COMMIT`), щоб запобігти станам часткової синхронизації.\n   - Усі реляційні сутності використовують первинні ключі **UUIDv7** (RFC 9562) для індексування впорядкованого за часом без фрагментації сторінок B-Tree.\n3. **Шар резервного копіювання (Google Drive `appDataFolder`)**:\n   - Опціональна синхронізація зашифрованих архівів за допомогою прихованої папки Google Drive `appDataFolder` (`https://www.googleapis.com/auth/drive.appdata`).\n   - Ізольовано від кореневих файлів користувача, що запобігає випадковому видаленню вручну.\n\n```\n+-------------------------------------------------------------------------+\n|                              CLIENT DEVICE                              |\n|                                                                         |"
-    },
-    "b1234372a19209a29335786a8c8f69a33e2cb4378e01c71f67cb32e62f6627ad": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "ru",
-      "translation": "Архитектурный обзор: Novus-Life"
-    },
-    "a475d6a18ed9302fa6dec4f855a5d0545190f6ff70981730f9a72b2917aa68c4": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "ru",
-      "translation": "**Novus Life** — это частная utility- и home expense management платформа с первично автономной (offline-first) архитектурой, разработанная и поддерживаемая **SGC-NOVUS** (System Generation Core). Она объединяет клиентскую..."
-    },
-    "8123076214560ebe84b4aab34eb9aefe741a7c924d431128ff528cb92e7760fd": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "ru",
-      "translation": "# Обзор архитектуры: Novus Life\n\n**Novus Life** — это приватная офлайн-платформа для управления коммунальными и домашними расходами, спроектированная и поддерживаемая **SGC-NOVUS** (System Generation Core). Она сочетает в себе клиентскую криптографическую изоляцию и автономную серверную инфраструктуру.\n\n---\n\n## 1. Высокоуровневая архитектура\n\nСистема работает на базе **гибридной модели хранения с приоритетом офлайн-режима (Hybrid Storage & Offline-First Model)**:\n1. **Первичный клиентский слой (IndexedDB через Dexie.js)**:\n   - Все непосредственные взаимодействия, ввод показаний счетчиков, расчет тарифов и просмотр истории выполняются напрямую с локальной базой данных IndexedDB.\n   - Защита от вытеснения кэша на уровне операционной системы обеспечивается с помощью **Persistent Storage API** (`navigator.storage.persist()`).\n   - Гарантирует 100% работоспособность в офлайн-среде (например, в подвалах, шахтах коммуникаций, при отключенной сети).\n2. **Слой синхронизации с сервером (Саморазворачиваемый VPS)**:\n   - Построен на базе **Node.js 22+ (Express + pg driver)** и **PostgreSQL 16**.\n   - Доступен через строго внутреннее проксирование за Nginx по домену `https://novus-life.online/api/*`.\n   - Данные фиксируются в атомарных транзакциях SQL (`BEGIN ... COMMIT`) для предотвращения состояний частичной синхронизации.\n   - Все реляционные сущности используют первичные ключи **UUIDv7** (RFC 9562) для индексации с упорядочиванием по временным меткам без фрагментации страниц B-дерева.\n3. **Слой резервного копирования (Google Drive `appDataFolder`)**:\n   - Опциональная синхронизация зашифрованных архивов с использованием скрытой папки `appDataFolder` в Google Drive (`https://www.googleapis.com/auth/drive.appdata`).\n   - Изолирован от корневых файлов пользователя, что предотвращает случайное ручное удаление.\n\n```\n+-------------------------------------------------------------------------+\n|                              CLIENT DEVICE                              |\n|                                                                         |"
     }
   }
 }
