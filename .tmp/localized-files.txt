@@ -1,3 +1,4 @@
 content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.uk.md
 content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.ru.md
+content/novus-life/novus-life-general/architecture.uk.md
 content/novus-life/novus-life-general/architecture.ru.md
