@@ -100,21 +100,6 @@
       "source": "content/novus-os/panel-core-manual/manual-readme.en.md",
       "locale": "uk",
       "translation": "# Manual\n\nПосібник для адміністраторів та операторів панелі.\n\nManual охоплює продуктові та операційні сценарії. Машинно-генеровані technical inventories винесено в окремі технічні розділи.\n\n## Infrastructure\n\n- [infrastructure/nodes.md](infrastructure/nodes.md)\n- [infrastructure/instances.md](infrastructure/instances.md)\n- [infrastructure/network.md](infrastructure/network.md)\n- [infrastructure/vfs.md](infrastructure/vfs.md)\n- [infrastructure/network_channels.md](infrastructure/network_channels.md)\n- [infrastructure/matrices.md](infrastructure/matrices.md)\n- [infrastructure/novus_agent_client.md](infrastructure/novus_agent_client.md)"
-    },
-    "4a00dcbbcddd51b1ef4b8d4901e081ebaaeddd9df736dda12fb33d148ebb9430": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "Огляд архітектури: Novus-Life"
-    },
-    "930ed47268acdf6388238339d819a5dd153d72cf607993b24e388d4021826569": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "**Novus Life** — це приватна utility та home expense management платформа з першочерговою підтримкою офлайн-режиму (offline-first), розроблена та підтримувана компанією **SGC-NOVUS** (System Generation Core). Вона поєднує клієнтську..."
-    },
-    "688bc7fe6d4a59512692b0aa08645159f54516ed407a3aab43439f4afcdfe56f": {
-      "source": "content/novus-life/novus-life-general/architecture.en.md",
-      "locale": "uk",
-      "translation": "# Огляд архітектури: Novus Life\n\n**Novus Life** — це приватна платформа для управління комунальними та домашніми витратами за принципом offline-first, розроблена та підтримувана **SGC-NOVUS** (System Generation Core). Вона поєднує криптографічну ізоляцію на стороні клієнта з автономною серверною інфраструктурою.\n\n---\n\n## 1. Архітектура високого рівня\n\nСистема працює на основі **моделі гібридного збереження даних та Offline-First**:\n1. **Основний клієнтський рівень (IndexedDB через Dexie.js)**:\n   - Усі оперативні взаємодії, введення показників лічильників, розрахунок тарифів та перегляд історії виконуються безпосередньо в локальній IndexedDB.\n   - Захищено від очищення кешу на рівні ОС за допомогою **Persistent Storage API** (`navigator.storage.persist()`).\n   - Забезпечує 100% працездатність в автономних умовах (наприклад, у підвалах, комунікаційних шахтах, мережах без доступу до Інтернету).\n2. **Рівень серверної синхронізації (Self-Hosted VPS)**:\n   - Побудовано з використанням **Node.js 22+ (Express + pg driver)** та **PostgreSQL 16**.\n   - Доступ здійснюється суворо через внутрішнє проксіювання за Nginx під доменом `https://novus-life.online/api/*`.\n   - Дані фіксуються в атомарних SQL-транзакціях (`BEGIN ... COMMIT`) для запобігання станам часткової синхронізації.\n   - Усі реляційні сутності використовують первинні ключі **UUIDv7** (RFC 9562) для індексування з впорядкуванням за часовою міткою без фрагментації сторінок B-Tree.\n3. **Рівень резервного копіювання (Google Drive `appDataFolder`)**:\n   - Опціональна синхронізація зашифрованого архіву з використанням прихованої папки Google Drive `appDataFolder` (`https://www.googleapis.com/auth/drive.appdata`).\n   - Ізольована від кореневих файлів користувача, що запобігає випадковому ручному видаленню.\n\n```\n+-------------------------------------------------------------------------+\n|                              CLIENT DEVICE                              |\n|                                                                         |\n```"
     }
   }
 }
