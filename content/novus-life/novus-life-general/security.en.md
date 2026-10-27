@@ -8,7 +8,7 @@ version: 0.1.0
 title: Security Architecture & Cryptographic Model
 description: '**Project**: Novus Life **Maintainer**: SGC-NOVUS (System Generation
   Core) **Security Level**: Zero-Knowledge Client-Side Encryption (E2EE)'
-last_updated: '2026-10-05'
+last_updated: '2026-10-27'
 source_locale: en
 locale: en
 source_repo: SGC-NOVUS/novus-life
