@@ -17,10 +17,10 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник REST API и руководство по интеграции
+# Novus-Life — Справочник по REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
-> **Базовый URL:** `https://novus-life.online/api` (Продакшн) или `http://localhost:3001/api` (Локальная разработка)  
+> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех защищенных эндпоинтов API требуются следующие заголовки:
+Все защищенные эндпоинты API требуют наличия следующих заголовков:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -50,9 +50,9 @@ Accept: application/json
 ## 2. Состояние и диагностика
 
 ### `GET /api/health`
-Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время работы бэкенд-процесса и статус пула соединений PostgreSQL.
 
-- **Аутентификация:** Не требуется (Публичный)
+- **Аутентификация:** Не требуется (публичный эндпоинт)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -137,7 +137,7 @@ Accept: application/json
 Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
 
 ### `GET /api/sync`
-Получает измененные записи по всем 12 доменным таблицам с момента указанной временной метки.
+Возвращает измененные записи во всех 12 доменных таблицах с момента указанной временной метки.
 
 - **Аутентификация:** Требуется
 - **Параметры запроса:**
@@ -204,7 +204,7 @@ Accept: application/json
 
 ---
 
-## 5. Зашифрованное хранилище Google Drive (`/api/drive`)
+## 5. Google Drive Encrypted Vault (`/api/drive`)
 
 ### `GET /api/drive/status`
 Проверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий на Google Drive.
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Выгружает зашифрованный JSON-пакет в изолированную папку `appDataFolder` пользователя.
+Загружает зашифрованный JSON-пайлоуд в изолированную папку `appDataFolder` пользователя.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -240,10 +240,10 @@ Accept: application/json
 
 ---
 
-## 6. Движок ИИ-ассистента (`/api/gemini`)
+## 6. AI Assistant Engine (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
-Предоставляет интерактивный финансовый анализ и рекомендации по оптимизации тарифов с использованием Google Gemini API.
+Обеспечивает диалоговый финансовый анализ и рекомендации по оптимизации тарифов с использованием Google Gemini API.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -281,7 +281,7 @@ Accept: application/json
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
 | `404` | Not Found | Запрашиваемая сущность не существует. |
 | `429` | Too Many Requests | Превышен лимит запросов (Максимум 100 запросов / минута). |
-| `500` | Internal Server Error | Сбой базы данных или необрабатываемое исключение. |
+| `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
 
 ---
 

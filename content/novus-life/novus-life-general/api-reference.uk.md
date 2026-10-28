@@ -4,9 +4,11 @@ cluster: novus-life
 category: novus-life-general
 order: 100
 status: active
-version: 1.0.0-beta
-title: Довідник REST API та інструкція з інтеграції Novus Life
-description: Вичерпний довідник з REST API Novus Life, ендпоінти автентифікації, протокол дельта-синхронізації, хмарний сейф Google Drive та модуль AI-асистента.
+version: 0.1.0
+title: Novus-Life — Довідник REST API та посібник з інтеграції
+description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
+  (Production) або http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
+  Tok...'
 last_updated: '2026-10-27'
 source_locale: en
 locale: uk
@@ -15,30 +17,29 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Довідник REST API та інструкція з інтеграції Novus Life
+# Novus Life — Довідник REST API та посібник з інтеграції
 
 > **Версія:** 1.0.0-beta Enterprise Edition  
-> **Базовий URL:** `https://novus-life.online/api` (Продакшен) або `http://localhost:3001/api` (Локальна розробка)  
+> **Базова URL:** `https://novus-life.online/api` (Production) або `http://localhost:3001/api` (локальна розробка)  
 > **Автентифікація:** Bearer Token (`Authorization: Bearer <JWT>`)  
-> **OpenAPI 3.1 Контракт:** Доступний у [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
+> **Контракт OpenAPI 3.1:** Доступно в [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
 
 ---
 
 ## 1. Глобальні стандарти запитів та відповідей
 
-### Стандартні HTTP-заголовки
-Усі захищені ендпоінти API вимагають передачі наступних заголовків:
+### Стандартні заголовки
+Усі автентифіковані кінцеві точки (endpoints) API вимагають наявності таких заголовків:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
 Accept: application/json
 ```
 
-### Стандартний формат відповідей про помилки
-Усі помилки повертаються в єдиному уніфікованому форматі JSON:
+### Стандартний формат відповіді про помилку
 ```json
 {
-  "error": "Короткий зрозумілий опис помилки",
+  "error": "Short human-readable error description",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -46,12 +47,12 @@ Accept: application/json
 
 ---
 
-## 2. Діагностика та перевірка стану
+## 2. Працездатність та діагностика
 
 ### `GET /api/health`
-Перевіряє час безперервної роботи процесу бекенда та стан пулу з'єднань з PostgreSQL.
+Перевіряє час безперебійної роботи (uptime) бекенд-процесу та статус пулу з'єднань PostgreSQL.
 
-- **Автентифікація:** Не потрібна (Публічний)
+- **Автентифікація:** Відсутня (Публічний)
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -68,7 +69,7 @@ Accept: application/json
 ## 3. Автентифікація та керування обліковими записами (`/api/auth`)
 
 ### `POST /api/auth/register`
-Створює новий обліковий запис користувача з криптографічним хешуванням пароля (`bcryptjs`).
+Створює новий обліковий запис користувача з хешуванням пароля із солюванням (`bcryptjs`).
 
 - **Тіло запиту:**
 ```json
@@ -93,7 +94,7 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Здійснює перевірку облікових даних користувача та видає підписаний токен JWT.
+Автентифікує облікові дані користувача та видає підписаний JWT токен.
 
 - **Тіло запиту:**
 ```json
@@ -115,9 +116,9 @@ Accept: application/json
 ```
 
 ### `GET /api/auth/me`
-Повертає профіль поточного автентифікованого користувача.
+Отримує профіль поточного автентифікованого користувача.
 
-- **Автентифікація:** Потрібна
+- **Автентифікація:** Обов'язкова
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -131,16 +132,16 @@ Accept: application/json
 
 ---
 
-## 4. Мультиорендна дельта-синхронізація (`/api/sync`)
+## 4. Багатокористувацька дельта-синхронізація (`/api/sync`)
 
-Протокол синхронізації координує стан між клієнтською базою IndexedDB (`Dexie.js`) та центральною базою даних PostgreSQL.
+Протокол синхронізації координує стан між клієнтською базою даних IndexedDB (`Dexie.js`) та основною базою даних PostgreSQL.
 
 ### `GET /api/sync`
-Отримує змінені записи з усіх 12 таблиць предметних областей, починаючи з переданої мітки часу.
+Отримує змінені записи в усіх 12 доменних таблицях починаючи з наданої позначки часу.
 
-- **Автентифікація:** Потрібна
-- **Параметри запиту (Query Parameters):**
-  - `since` *(string, ISO 8601)*: Мітка часу останньої успішної локальної синхронізації. Приклад: `?since=2026-10-27T12:00:00.000Z`.
+- **Автентифікація:** Обов'язкова
+- **Параметри запиту:**
+  - `since` *(рядок, ISO 8601)*: Позначка часу останньої успішної локальної синхронізації. Приклад: `?since=2026-10-27T12:00:00.000Z`.
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -148,7 +149,7 @@ Accept: application/json
   "addresses": [
     {
       "id": "0192e210-67a8-7d31-9f20-b44c20e18d09",
-      "name": "Основна квартира",
+      "name": "Main Apartment",
       "color": "#6366f1",
       "area": 75.5,
       "residentsCount": 3,
@@ -171,9 +172,9 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Надсилає локально створені або змінені записи на сервер із виконанням злиття (upsert).
+Передає локально створені або змінені записи на сервер з використанням злиття типу upsert.
 
-- **Автентифікація:** Потрібна
+- **Автентикація:** Обов'язкова
 - **Тіло запиту:**
 ```json
 {
@@ -203,12 +204,12 @@ Accept: application/json
 
 ---
 
-## 5. Зашифрований сейф Google Drive (`/api/drive`)
+## 5. Зашифроване сховище Google Drive (`/api/drive`)
 
 ### `GET /api/drive/status`
-Перевіряє, чи авторизував поточний користувач приватний сейф резервного копіювання у Google Drive.
+Перевіряє, чи авторизував поточний користувач персональне сховище резервних копій на Google Drive.
 
-- **Автентифікація:** Потрібна
+- **Автентикація:** Обов'язкова
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -219,10 +220,10 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Завантажує зашифрований пакет JSON до ізольованої прихованої системної папки користувача `appDataFolder`.
+Завантажує зашифрований корисний навантаження (payload) JSON у ізольовану `appDataFolder` користувача.
 
-- **Автентифікація:** Потрібна
-- **Тіло запиту:**
+- **Автентифікація:** Обов'язкова
+- **Тіло запиту (Request Body):**
 ```json
 {
   "encryptedData": "U2FsdGVkX19+...",
@@ -239,16 +240,16 @@ Accept: application/json
 
 ---
 
-## 6. Модуль AI-асистента (`/api/gemini`)
+## 6. Двигун AI-асистента (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
-Забезпечує інтерактивний фінансовий аналіз та рекомендації щодо оптимізації тарифів за допомогою Google Gemini API.
+Надає розмовний фінансовий аналіз та поради щодо оптимізації тарифів за допомогою Google Gemini API.
 
-- **Автентифікація:** Потрібна
-- **Тіло запиту:**
+- **Автентифікація:** Обов'язкова
+- **Тіло запиту (Request Body):**
 ```json
 {
-  "message": "Як мені зменшити рахунок за електроенергію за двозонним тарифом день/ніч?",
+  "message": "How can I reduce my electric bill under a 2-tier day/night tariff?",
   "context": {
     "currentTariff": "two_tier",
     "dayRate": 4.32,
@@ -259,29 +260,29 @@ Accept: application/json
 - **Відповідь (`200 OK`):**
 ```json
 {
-  "reply": "За вашим двозонним тарифом нічна електроенергія на 50% дешевша з 23:00 до 07:00...",
+  "reply": "Under your two-tier tariff, night electricity is 50% cheaper between 23:00 and 07:00...",
   "suggestedActions": [
-    "Налаштуйте таймер бойлера на період з 23:00 до 06:00",
-    "Вмикайте пральну та посудомийну машини після 23:00"
+    "Schedule water heater timer between 23:00 and 06:00",
+    "Run washing machine after 23:00"
   ]
 }
 ```
 
 ---
 
-## 7. HTTP-коди статусів та обробка помилок
+## 7. HTTP Status Codes & Error Handling
 
-| Код | Статус | Значення |
+| Code | Status | Meaning |
 | :---: | :--- | :--- |
 | `200` | OK | Запит успішно виконано. |
 | `201` | Created | Ресурс успішно створено. |
-| `400` | Bad Request | Некоректний синтаксис JSON або недійсні параметри. |
-| `401` | Unauthorized | Відсутній або протермінований токен Bearer JWT. |
-| `403` | Forbidden | Недостатньо прав згідно з політиками Row Level Security. |
-| `404` | Not Found | Запитувану сутність не знайдено. |
-| `429` | Too Many Requests | Перевищено ліміт запитів (максимум 100 запитів / хвилину). |
-| `500` | Internal Server Error | Помилка бази даних або неперехоплене виключення. |
+| `400` | Bad Request | Некоректний тіл JSON або недійсний параметр. |
+| `401` | Unauthorized | Відсутній або прострочений Bearer JWT токен. |
+| `403` | Forbidden | Недостатньо прав згідно з Row Level Security. |
+| `404` | Not Found | Запитану сутність не знайдено. |
+| `429` | Too Many Requests | Перевищено ліміт запитів (Максимум 100 запитів / хвилина). |
+| `500` | Internal Server Error | Збій бази даних або необроблений виняток. |
 
 ---
 
-*Для інтерактивного тестування імпортуйте специфікацію [openapi.yaml](openapi.yaml) у Swagger Editor або Postman.*
+*Для інтерактивного дослідження імпортуйте [openapi.yaml](openapi.yaml) у Swagger Editor або Postman.*
