@@ -5,7 +5,7 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus Life — Справочник по REST API и руководство по интеграции
+title: Novus-Life — Справочник по REST API и руководство по интеграции
 description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
   (Production) или http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
   Tok...'
@@ -17,10 +17,10 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник по REST API и руководство по интеграции
+# Novus-Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
-> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (Локальная разработка)  
+> **Базовый URL:** `https://novus-life.online/api` (Продакшн) или `http://localhost:3001/api` (Локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех эндпоинтов API, требующих аутентификации, необходимы следующие заголовки:
+Для всех защищенных эндпоинтов API требуются следующие заголовки:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартный формат ответа об ошибке
 ```json
 {
-  "error": "Short human-readable error description",
+  "error": "Краткое понятное для человека описание ошибки",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -50,9 +50,9 @@ Accept: application/json
 ## 2. Состояние и диагностика
 
 ### `GET /api/health`
-Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
 
-- **Аутентификация:** Не требуется (Публичный)
+- **Аутентификация:** Не требуется (публичный эндпоинт)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -94,7 +94,7 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Проверяет учетные данные пользователя и выдает подписанный JWT-токен.
+Проводит аутентификацию учетных данных пользователя и выдает подписанный JWT-токен.
 
 - **Тело запроса:**
 ```json
@@ -132,9 +132,9 @@ Accept: application/json
 
 ---
 
-## 4. Многопоточная дельта-синхронизация (`/api/sync`)
+## 4. Многопотоковая дельта-синхронизация (`/api/sync`)
 
-Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и основной базой данных PostgreSQL.
+Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
 
 ### `GET /api/sync`
 Получает измененные записи по всем 12 доменным таблицам с момента указанной метки времени.
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Отправляет созданные или измененные локально записи на сервер с применением слияния upsert.
+Отправляет локально созданные или измененные записи на сервер с использованием слияния типа upsert.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Загружает зашифрованный JSON-пакет в изолированную папку пользователя `appDataFolder`.
+Загружает зашифрованный JSON-пайлоуд в изолированную папку пользователя `appDataFolder`.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
