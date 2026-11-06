@@ -5,7 +5,7 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus Life — Довідник з REST API та посібник з інтеграції
+title: Novus-Life — Довідник REST API та посібник з інтеграції
 description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
   (Production) або http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
   Tok...'
@@ -17,19 +17,19 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus Life — Довідник REST API та посібник з інтеграції
+# Novus Life — Довідник REST API та Посібник з інтеграції
 
 > **Версія:** 1.0.0-beta Enterprise Edition  
-> **Базова URL-адреса:** `https://novus-life.online/api` (Продакшн) або `http://localhost:3001/api` (Локальна розробка)  
+> **Базовий URL:** `https://novus-life.online/api` (Продакшн) або `http://localhost:3001/api` (Локальна розробка)  
 > **Автентифікація:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступно в [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
 
 ---
 
-## 1. Загальні стандарти запитів і відповідей
+## 1. Глобальні стандарти запитів і відповідей
 
 ### Стандартні заголовки
-Усі автентифіковані кінцеві точки API вимагають наявності таких заголовків:
+Усі автентифіковані кінцеві точки (ендпоінти) API вимагають наявності таких заголовків:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартний формат відповіді про помилку
 ```json
 {
-  "error": "Короткий опис помилки, зрозумілий людині",
+  "error": "Short human-readable error description",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -50,7 +50,7 @@ Accept: application/json
 ## 2. Працездатність та діагностика
 
 ### `GET /api/health`
-Перевіряє час безперебійної роботи фонового процесу та статус пулу з'єднань PostgreSQL.
+Перевіряє час безперебійної роботи бекенд-процесу та статус пулу з'єднань PostgreSQL.
 
 - **Автентифікація:** Відсутня (Публічна)
 - **Відповідь (`200 OK`):**
@@ -69,9 +69,9 @@ Accept: application/json
 ## 3. Автентифікація та управління обліковими записами (`/api/auth`)
 
 ### `POST /api/auth/register`
-Створює новий обліковий запис користувача з хешуванням пароля із "солі" (`bcryptjs`).
+Створює новий обліковий запис користувача з хешуванням пароля із "солінням" (`bcryptjs`).
 
-- **Тіло запиту:**
+- **Тіло запиту (Request Body):**
 ```json
 {
   "email": "user@example.com",
@@ -96,7 +96,7 @@ Accept: application/json
 ### `POST /api/auth/login`
 Автентифікує облікові дані користувача та видає підписаний JWT-токен.
 
-- **Тіло запиту:**
+- **Тіло запиту (Request Body):**
 ```json
 {
   "email": "user@example.com",
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Передає створені або змінені локально записи на сервер із використанням злиття типу upsert.
+Передає локально створені або змінені записи на сервер з використанням злиття типу upsert.
 
 - **Автентикація:** Обов'язкова
 - **Тіло запиту:**
@@ -204,10 +204,10 @@ Accept: application/json
 
 ---
 
-## 5. Google Drive Encrypted Vault (`/api/drive`)
+## 5. Зашицьоване сховище Google Drive (`/api/drive`)
 
 ### `GET /api/drive/status`
-Перевіряє, чи поточний користувач авторизував особисте сховище резервних копій на Google Drive.
+Перевіряє, чи авторизував поточний користувач персональне сховище резервних копій на Google Drive.
 
 - **Автентикація:** Обов'язкова
 - **Відповідь (`200 OK`):**
@@ -220,10 +220,10 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Завантажує зашифрований JSON-пейлоуд в ізольовану `appDataFolder` користувача.
+Завантажує зашифрований корисний навантаження (payload) у захищену `appDataFolder` користувача.
 
-- **Автентикація:** Обов'язкова
-- **Тіло запиту:**
+- **Автентифікація:** Обов'язкова
+- **Тіло запиту (Request Body):**
 ```json
 {
   "encryptedData": "U2FsdGVkX19+...",
@@ -240,13 +240,13 @@ Accept: application/json
 
 ---
 
-## 6. Рушій AI-асистента (`/api/gemini`)
+## 6. Двигун AI-асистента (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
-Надає інтерактивний фінансовий аналіз та поради з оптимізації тарифів за допомогою Google Gemini API.
+Надає розмовний фінансовий аналіз та поради щодо оптимізації тарифів за допомогою Google Gemini API.
 
-- **Автентикація:** Обов'язкова
-- **Тіло запиту:**
+- **Автентифікація:** Обов'язкова
+- **Тіло запиту (Request Body):**
 ```json
 {
   "message": "How can I reduce my electric bill under a 2-tier day/night tariff?",
@@ -270,19 +270,19 @@ Accept: application/json
 
 ---
 
-## 7. HTTP-статуси та обробка помилок
+## 7. HTTP Status Codes & Error Handling
 
-| Код | Статус | Значення |
+| Code | Status | Meaning |
 | :---: | :--- | :--- |
-| `200` | OK | Запит виконано успішно. |
+| `200` | OK | Запит успішно виконано. |
 | `201` | Created | Ресурс успішно створено. |
-| `400` | Bad Request | Некоректне тіло JSON або недійсний параметр. |
+| `400` | Bad Request | Некоректний тіл JSON або недійсний параметр. |
 | `401` | Unauthorized | Відсутній або прострочений Bearer JWT token. |
-| `403` | Forbidden | Недостатньо прав згідно з Row Level Security. |
-| `404` | Not Found | Запитану сутність не знайдено. |
-| `429` | Too Many Requests | Перевищено ліміт запитів (Максимум 100 запитів / хвилину). |
+| `403` | Forbidden | Недостатньо прав доступу згідно з політикою Row Level Security. |
+| `404` | Not Found | Запитана сутність не існує. |
+| `429` | Too Many Requests | Перевищено ліміт запитів (Максимум 100 запитів на хвилину). |
 | `500` | Internal Server Error | Збій бази даних або необроблений виняток. |
 
 ---
 
-*Для інтерактивного ознайомлення імпортуйте [openapi.yaml](openapi.yaml) у Swagger Editor або Postman.*
+*Для інтерактивного дослідження імпортуйте [openapi.yaml](openapi.yaml) у Swagger Editor або Postman.*
