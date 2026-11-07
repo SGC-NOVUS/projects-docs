@@ -1,1 +1,2 @@
 content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.uk.md
+content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.ru.md
