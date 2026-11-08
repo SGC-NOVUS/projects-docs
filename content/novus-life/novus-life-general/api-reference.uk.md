@@ -5,10 +5,10 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus-Life — Довідник REST API та посібник з інтеграції
-description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
-  (Production) або http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
-  Tok...'
+title: Novus Life — Довідник REST API та посібник з інтеграції
+description: '> **Версія:** 1.0.0-beta Enterprise Edition > **Базовий URL:** https://novus-life.online/api
+  (Продакшн) або http://localhost:3001/api (Локальна розробка) > **Автентифікація:**
+  Bearer Tok...'
 last_updated: '2026-10-27'
 source_locale: en
 locale: uk
@@ -20,16 +20,16 @@ managed_by: sync_private_docs
 # Novus Life — Довідник REST API та посібник з інтеграції
 
 > **Версія:** 1.0.0-beta Enterprise Edition  
-> **Базова URL:** `https://novus-life.online/api` (Продакшн) або `http://localhost:3001/api` (Локальна розробка)  
+> **Базовий URL:** `https://novus-life.online/api` (Production) або `http://localhost:3001/api` (Local Dev)  
 > **Автентифікація:** Bearer Token (`Authorization: Bearer <JWT>`)  
-> **Контракт OpenAPI 3.1:** Доступно в [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
+> **Контракт OpenAPI 3.1:** Доступний у [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
 
 ---
 
-## 1. Глобальні стандарти запитів і відповідей
+## 1. Глобальні стандарти запитів та відповідей
 
 ### Стандартні заголовки
-Усі автентифіковані кінцеві точки API вимагають наявності таких заголовків:
+Усі автентифіковані кінцеві точки API вимагають наступних заголовків:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -47,10 +47,10 @@ Accept: application/json
 
 ---
 
-## 2. Стан та діагностика
+## 2. Перевірка стану та діагностика
 
 ### `GET /api/health`
-Перевіряє час безперебійної роботи фонового процесу та статус пулу з'єднань PostgreSQL.
+Перевіряє час безперервної роботи бекенд-процесу та стан пулу з'єднань PostgreSQL.
 
 - **Автентифікація:** Відсутня (Публічна)
 - **Відповідь (`200 OK`):**
@@ -66,12 +66,12 @@ Accept: application/json
 
 ---
 
-## 3. Автентифікація та управління обліковими записами (`/api/auth`)
+## 3. Аутентифікація та керування обліковими записами (`/api/auth`)
 
 ### `POST /api/auth/register`
-Створює новий обліковий запис користувача з хешуванням пароля із солінням (`bcryptjs`).
+Створює новий обліковий запис користувача з хешуванням пароля із солюванням (`bcryptjs`).
 
-- **Тіло запиту (Request Body):**
+- **Тіло запиту:**
 ```json
 {
   "email": "user@example.com",
@@ -94,9 +94,9 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Автентифікує облікові дані користувача та видає підписаний JWT токен.
+Аутентифікує облікові дані користувача та видає підписаний JWT-токен.
 
-- **Тіло запиту (Request Body):**
+- **Тіло запиту:**
 ```json
 {
   "email": "user@example.com",
@@ -132,12 +132,12 @@ Accept: application/json
 
 ---
 
-## 4. Багатоорендна дельта-синхронизація (`/api/sync`)
+## 4. Багатокористувацька дельта-синхронізація (`/api/sync`)
 
 Протокол синхронізації узгоджує стан між клієнтською IndexedDB (`Dexie.js`) та основною базою даних PostgreSQL.
 
 ### `GET /api/sync`
-Отримує змінені записи в усіх 12 доменних таблицях із моменту надання вказаної позначки часу.
+Отримує змінені записи в усіх 12 доменних таблицях з моменту надання вказаної позначки часу.
 
 - **Автентифікація:** Обов'язкова
 - **Параметри запиту:**
@@ -172,9 +172,9 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Передає локально створені або змінені записи на сервер з використанням злиття типу upsert.
+Передає локально створені або змінені записи на сервер із використанням операції злиття upsert.
 
-- **Автентикація:** Обов'язкова
+- **Автентифікація:** Обов'язкова
 - **Тіло запиту:**
 ```json
 {
@@ -204,12 +204,12 @@ Accept: application/json
 
 ---
 
-## 5. Зашиғроване сховище Google Drive (`/api/drive`)
+## 5. Зашиковане сховище Google Drive (`/api/drive`)
 
 ### `GET /api/drive/status`
-Перевіряє, чи надав поточний користувач дозвіл на особисте сховище резервних копій у Google Drive.
+Перевіряє, чи поточний користувач авторизував персональне сховище резервних копій на Google Drive.
 
-- **Автентикація:** Обов'язкова
+- **Автентифікація:** Обов'язкова
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Завантажує зашифрований корисний навантаження (payload) у захищену `appDataFolder` користувача.
+Завантажує зашифрований корисний навантаження (payload) у вигляді JSON в ізольовану `appDataFolder` користувача.
 
 - **Автентифікація:** Обов'язкова
 - **Тіло запиту (Request Body):**
@@ -243,7 +243,7 @@ Accept: application/json
 ## 6. Рушій AI-асистента (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
-Надає розмовний фінансовий аналіз та поради з оптимізації тарифів за допомогою Google Gemini API.
+Надає інтерактивний фінансовий аналіз та поради щодо оптимізації тарифів за допомогою Google Gemini API.
 
 - **Автентифікація:** Обов'язкова
 - **Тіло запиту (Request Body):**
@@ -270,17 +270,17 @@ Accept: application/json
 
 ---
 
-## 7. HTTP Status Codes & Error Handling
+## 7. HTTP-коди стану та обробка помилок
 
-| Code | Status | Meaning |
+| Код | Статус | Значення |
 | :---: | :--- | :--- |
-| `200` | OK | Запит виконано успішно. |
+| `200` | OK | Запит успішно виконано. |
 | `201` | Created | Ресурс успішно створено. |
 | `400` | Bad Request | Некоректний тіл JSON або недійсний параметр. |
-| `401` | Unauthorized | Відсутній або прострочений Bearer JWT токен. |
+| `401` | Unauthorized | Відсутній або прострочений токен Bearer JWT. |
 | `403` | Forbidden | Недостатньо прав згідно з Row Level Security. |
-| `404` | Not Found | Запитана сутність не існує. |
-| `429` | Too Many Requests | Перевищено ліміт запитів (Макс. 100 запитів / хвилина). |
+| `404` | Not Found | Запрошена сутність не існує. |
+| `429` | Too Many Requests | Перевищено ліміт запитів (максимум 100 запитів / хвилину). |
 | `500` | Internal Server Error | Збій бази даних або необроблений виняток. |
 
 ---
