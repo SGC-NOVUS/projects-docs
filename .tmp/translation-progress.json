@@ -140,6 +140,11 @@
       "source": "content/novus-life/novus-life-general/architecture.en.md",
       "locale": "ru",
       "translation": "Novus-Life — Руководство по системной архитектуре и проектированию"
+    },
+    "00132026412fd5e22ebee24110fc9b9bd9bea038b35a5ddcfcf563ea170b05f4": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "Novus-Life — Справочник по REST API и руководство по интеграции"
     }
   }
 }
