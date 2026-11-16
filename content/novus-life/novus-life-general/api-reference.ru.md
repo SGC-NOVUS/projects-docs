@@ -17,19 +17,19 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник по REST API и руководство по интеграции
+# Novus-Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
 > **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
-> **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
+> **Спецификация OpenAPI 3.1:** Доступна в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
 ---
 
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех эндпоинтов API, требующих аутентификации, необходимы следующие заголовки:
+Все защищенные конечные точки API требуют наличия следующих заголовков:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -47,12 +47,12 @@ Accept: application/json
 
 ---
 
-## 2. Состояние и диагностика
+## 2. Работоспособность и диагностика
 
 ### `GET /api/health`
-Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время безотказной работы бэкенд-процесса и статус пула соединений с PostgreSQL.
 
-- **Аутентификация:** Отсутствует (публичный доступ)
+- **Аутентификация:** Не требуется (публичный эндпоинт)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -71,7 +71,7 @@ Accept: application/json
 ### `POST /api/auth/register`
 Создает новую учетную запись пользователя с хешированием пароля с добавлением «соли» (`bcryptjs`).
 
-- **Тело запроса (Request Body):**
+- **Тело запроса:**
 ```json
 {
   "email": "user@example.com",
@@ -96,7 +96,7 @@ Accept: application/json
 ### `POST /api/auth/login`
 Выполняет аутентификацию учетных данных пользователя и выдает подписанный JWT-токен.
 
-- **Тело запроса (Request Body):**
+- **Тело запроса:**
 ```json
 {
   "email": "user@example.com",
@@ -134,7 +134,7 @@ Accept: application/json
 
 ## 4. Многопоточная дельта-синхронизация (`/api/sync`)
 
-Протокол синхронизации координирует состояние между клиентской базой данных IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
+Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и основной базой данных PostgreSQL.
 
 ### `GET /api/sync`
 Возвращает измененные записи по всем 12 доменным таблицам с момента указанной метки времени.
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Загружает зашифрованный JSON-пайлоад в изолированную `appDataFolder` пользователя.
+Загружает зашифрованный JSON-пакет в изолированную папку `appDataFolder` пользователя.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -240,7 +240,7 @@ Accept: application/json
 
 ---
 
-## 6. AI Assistant Engine (`/api/gemini`)
+## 6. Движок ИИ-ассистента (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
 Предоставляет интерактивный финансовый анализ и рекомендации по оптимизации тарифов с использованием Google Gemini API.
@@ -270,17 +270,17 @@ Accept: application/json
 
 ---
 
-## 7. HTTP-коды состояния и обработка ошибок
+## 7. HTTP Status Codes & Error Handling
 
-| Код | Статус | Значение |
+| Code | Status | Meaning |
 | :---: | :--- | :--- |
-| `200` | OK | Запрос успешно выполнен. |
+| `200` | OK | Запрос выполнен успешно. |
 | `201` | Created | Ресурс успешно создан. |
 | `400` | Bad Request | Некорректное тело JSON или неверный параметр. |
-| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT-токена. |
+| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT token. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
-| `404` | Not Found | Запрошенная сущность не существует. |
-| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
+| `404` | Not Found | Запрашиваемая сущность не существует. |
+| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов / минута). |
 | `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
 
 ---
