@@ -17,10 +17,10 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник по REST API и руководство по интеграции
+# Novus-Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
-> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
+> **Базовый URL:** `https://novus-life.online/api` (Продакшн) или `http://localhost:3001/api` (Локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех эндпоинтов API, требующих аутентификации, необходимы следующие заголовки:
+Все эндпоинты API, требующие аутентификации, используют следующие заголовки:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартный формат ответа об ошибке
 ```json
 {
-  "error": "Краткое описание ошибки, понятное человеку",
+  "error": "Short human-readable error description",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -50,7 +50,7 @@ Accept: application/json
 ## 2. Состояние и диагностика
 
 ### `GET /api/health`
-Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений с PostgreSQL.
+Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
 
 - **Аутентификация:** Не требуется (публичный эндпоинт)
 - **Ответ (`200 OK`):**
@@ -132,9 +132,9 @@ Accept: application/json
 
 ---
 
-## 4. Мультитенантная дельта-синхронизация (`/api/sync`)
+## 4. Многопоточная дельта-синхронизация (`/api/sync`)
 
-Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
+Протокол синхронизации координирует состояние между клиентской базой данных IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
 
 ### `GET /api/sync`
 Возвращает измененные записи по всем 12 доменным таблицам с момента указанной метки времени.
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Отправляет созданные или измененные локально записи на сервер с использованием слияния типа upsert.
+Отправляет локально созданные или измененные записи на сервер с применением стратегии слияния upsert.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -204,7 +204,7 @@ Accept: application/json
 
 ---
 
-## 5. Google Drive Encrypted Vault (`/api/drive`)
+## 5. Зашифрованное хранилище Google Drive (`/api/drive`)
 
 ### `GET /api/drive/status`
 Проверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий в Google Drive.
@@ -280,8 +280,8 @@ Accept: application/json
 | `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT token. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
 | `404` | Not Found | Запрашиваемая сущность не существует. |
-| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов / минута). |
-| `500` | Internal Server Error | Сбой базы данных или необрабатываемое исключение. |
+| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
+| `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
 
 ---
 
