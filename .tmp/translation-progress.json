@@ -140,21 +140,6 @@
       "source": "content/novus-life/novus-life-general/architecture.en.md",
       "locale": "ru",
       "translation": "Novus-Life — Руководство по системной архитектуре и проектированию"
-    },
-    "6ec57d2ce173596524c816746988803ec5af40ecfc3a374bcb78b796be26e7af": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "Ground truth: Реализация Novus Flow.EDO"
-    },
-    "08ed031b27940d152042cd3da6fe7e08318c07728c08a0de26220c8ee2e07ee7": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "**Status:** внутренний статический аудит чекаута от 2026-09-28. **Scope:** маршруты Vue frontend, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и environ..."
-    },
-    "87637a5dfa99a70dbf04f33b1737ec8539eb582e3a58344e07dccfc503ec8b4e": {
-      "source": "content/novus-edo/novus-edo-general/ground-truth-implementation-2026-09-28.en.md",
-      "locale": "ru",
-      "translation": "# Эталонные данные: реализация Novus Flow.EDO\n\n**Статус:** внутренний статический аудит процесса оформления (checkout) по состоянию на 2026-09-28.\n**Область:** маршруты фронтенда на Vue, композиция сервера Express, персистентность Prisma/R2, криптография, конвертер и чтение переменных окружения. В этом документе описывается реализованное поведение, а не соответствие требованиям или юридическая сертификация.\n\n## Исполняемая структура\n\nПриложение представляет собой браузерный клиент Vue/Vite плюс API на Express, запускаемый через `tsx server/index.ts`.\n\n| Поверхность | Фактическая реализация |\n| --- | --- |\n| Пользовательский интерфейс браузера | Vue 3, Vue Router, Pinia и клиентские службы подписи |\n| API | Express 5 на `PORT`, по умолчанию `3001` |\n| Персистентность | Prisma 7 с адаптером MariaDB; резервный вариант `DATABASE_URL` — `mysql://novus:novus123@localhost:3306/novus_edo` |\n| Объектное хранилище | Cloudflare R2 через AWS S3 SDK, с предварительно подписанными URL для выгрузки/скачивания |\n| Почта | Resend плюс рендеринг Vue Email |\n| Конвертер | Независимый HTTP-сервис на `127.0.0.1:4174`, порождающий процесс LibreOffice (`SOFFICE_PATH` или `soffice`) |\n| Браузерная подпись | Приватные ключи документов остаются на стороне браузера в соответствии с реализованной клиентской архитектурой; сервер сохраняет артефакты подписи и метаданные |\n\n`server/index.ts` загружает dotenv, отклоняет отсутствующий или стандартный `JWT_SECRET` только при `NODE_ENV=production`, настраивает CORS с помощью `CORS_ORIGIN` или `*`, подключает маршруты и раздает `dist/` в production."
     }
   }
 }

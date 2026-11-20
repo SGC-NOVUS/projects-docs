@@ -17,10 +17,10 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник REST API и руководство по интеграции
+# Novus-Life — Справочник по REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
-> **Базовый URL:** `https://novus-life.online/api` (Продакшн) или `http://localhost:3001/api` (Локальная разработка)  
+> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Все эндпоинты API, требующие аутентификации, используют следующие заголовки:
+Для всех эндпоинтов API, требующих аутентификации, необходимы следующие заголовки:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -47,10 +47,10 @@ Accept: application/json
 
 ---
 
-## 2. Состояние и диагностика
+## 2. Работоспособность и диагностика
 
 ### `GET /api/health`
-Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений с PostgreSQL.
 
 - **Аутентификация:** Не требуется (публичный эндпоинт)
 - **Ответ (`200 OK`):**
@@ -69,7 +69,7 @@ Accept: application/json
 ## 3. Аутентификация и управление учетными записями (`/api/auth`)
 
 ### `POST /api/auth/register`
-Создает новую учетную запись пользователя с хешированием пароля с добавлением «соли» (`bcryptjs`).
+Создает новую учетную запись пользователя с хешированием пароля с добавлением соли (`bcryptjs`).
 
 - **Тело запроса:**
 ```json
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Отправляет локально созданные или измененные записи на сервер с применением стратегии слияния upsert.
+Отправляет созданные или измененные локально записи на сервер с использованием слияния типа upsert.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -204,7 +204,7 @@ Accept: application/json
 
 ---
 
-## 5. Зашифрованное хранилище Google Drive (`/api/drive`)
+## 5. Google Drive Encrypted Vault (`/api/drive`)
 
 ### `GET /api/drive/status`
 Проверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий в Google Drive.
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Загружает зашифрованный JSON-пакет в изолированную папку пользователя `appDataFolder`.
+Загружает зашифрованный JSON-пайлоуд в изолированную папку `appDataFolder` пользователя.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -270,19 +270,19 @@ Accept: application/json
 
 ---
 
-## 7. HTTP Status Codes & Error Handling
+## 7. HTTP-коды состояния и обработка ошибок
 
-| Code | Status | Meaning |
+| Код | Статус | Значение |
 | :---: | :--- | :--- |
-| `200` | OK | Запрос выполнен успешно. |
+| `200` | OK | Запрос успешно выполнен. |
 | `201` | Created | Ресурс успешно создан. |
-| `400` | Bad Request | Некорректное тело JSON или неверный параметр. |
-| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT token. |
+| `400` | Bad Request | Некорректный JSON-тело или неверный параметр. |
+| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT-токена. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
-| `404` | Not Found | Запрашиваемая сущность не существует. |
+| `404` | Not Found | Запрошенная сущность не существует. |
 | `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
-| `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
+| `500` | Internal Server Error | Сбой базы данных или необрабатываемое исключение. |
 
 ---
 
-*Для интерактивного ознакомления импортируйте [openapi.yaml](openapi.yaml) в Swagger Editor или Postman.*
+*Для интерактивного изучения импортируйте [openapi.yaml](openapi.yaml) в Swagger Editor или Postman.*
