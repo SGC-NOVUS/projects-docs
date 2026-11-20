@@ -5,10 +5,10 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus Life — Довідник REST API та посібник з інтеграції
-description: '> **Версія:** 1.0.0-beta Enterprise Edition > **Базовий URL:** https://novus-life.online/api
-  (Продакшн) або http://localhost:3001/api (Локальна розробка) > **Автентифікація:**
-  Bearer Tok...'
+title: Novus-Life — Довідник REST API та посібник з інтеграції
+description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
+  (Production) або http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
+  Tok...'
 last_updated: '2026-10-27'
 source_locale: en
 locale: uk
@@ -17,29 +17,29 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus Life — Довідник REST API та посібник з інтеграції
+# Novus Life — Довідник REST API та Посібник з інтеграції
 
 > **Версія:** 1.0.0-beta Enterprise Edition  
-> **Базовий URL:** `https://novus-life.online/api` (Production) або `http://localhost:3001/api` (Локальна розробка)  
+> **Базова URL-адреса:** `https://novus-life.online/api` (Продакшн) або `http://localhost:3001/api` (Локальна розробка)  
 > **Автентифікація:** Bearer Token (`Authorization: Bearer <JWT>`)  
-> **Контракт OpenAPI 3.1:** Доступний у [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
+> **Контракт OpenAPI 3.1:** Доступно в [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)
 
 ---
 
-## 1. Глобальні стандарти запитів та відповідей
+## 1. Глобальні стандарти запитів і відповідей
 
 ### Стандартні заголовки
-Усі автентифіковані кінцеві точки API вимагають наступних заголовків:
+Усі автентифіковані кінцеві точки API вимагають наявності таких заголовків:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
 Accept: application/json
 ```
 
-### Стандартний формат відповіді з помилкою
+### Стандартний формат відповіді про помилку
 ```json
 {
-  "error": "Short human-readable error description",
+  "error": "Короткий опис помилки, зрозумілий людині",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -47,10 +47,10 @@ Accept: application/json
 
 ---
 
-## 2. Стан системи та діагностика
+## 2. Працездатність та діагностика
 
 ### `GET /api/health`
-Перевіряє час роботи бекенд-процесу та стан пулу з'єднань PostgreSQL.
+Перевіряє час безперебійної роботи бекенд-процесу та статус пулу з'єднань PostgreSQL.
 
 - **Автентифікація:** Відсутня (Публічна)
 - **Відповідь (`200 OK`):**
@@ -64,9 +64,7 @@ Accept: application/json
 }
 ```
 
----
-
-## 3. Автентифікація та управління обліковими записами (`/api/auth`)
+## 3. Автентифікація та керування обліковими записами (`/api/auth`)
 
 ### `POST /api/auth/register`
 Створює новий обліковий запис користувача з хешуванням пароля із сіллю (`bcryptjs`).
@@ -94,7 +92,7 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Автентифікує облікові дані користувача та видає підписаний JWT-токен.
+Автентифікує облікові дані користувача та видає підписаний JWT token.
 
 - **Тіло запиту:**
 ```json
@@ -132,16 +130,16 @@ Accept: application/json
 
 ---
 
-## 4. Мультитенентна дельта-синхронізація (`/api/sync`)
+## 4. Багатокористувацька дельта-синхронизація (`/api/sync`)
 
 Протокол синхронізації координує стан між клієнтською IndexedDB (`Dexie.js`) та основною базою даних PostgreSQL.
 
 ### `GET /api/sync`
-Отримує змінені записи з усіх 12 доменних таблиць від вказаної часової позначки.
+Отримує змінені записи в усіх 12 доменних таблицях з моменту надання вказаної позначки часу.
 
 - **Автентифікація:** Обов'язкова
 - **Параметри запиту:**
-  - `since` *(string, ISO 8601)*: Часова позначка останньої успішної локальної синхронізації. Приклад: `?since=2026-10-27T12:00:00.000Z`.
+  - `since` *(рядок, ISO 8601)*: Позначка часу останньої успішної локальної синхронізації. Приклад: `?since=2026-10-27T12:00:00.000Z`.
 - **Відповідь (`200 OK`):**
 ```json
 {
@@ -172,7 +170,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Передає локально створені або змінені записи на сервер зі злиттям upsert.
+Передає локально створені або змінені записи на сервер з використанням злиття upsert.
 
 - **Автентифікація:** Обов'язкова
 - **Тіло запиту:**
@@ -204,10 +202,10 @@ Accept: application/json
 
 ---
 
-## 5. Зашифроване сховище Google Drive (`/api/drive`)
+## 5. Google Drive Encrypted Vault (`/api/drive`)
 
 ### `GET /api/drive/status`
-Перевіряє, чи авторизував поточний користувач особисте сховище резервних копій Google Drive.
+Перевіряє, чи поточний користувач авторизував особисте сховище резервних копій на Google Drive.
 
 - **Автентифікація:** Обов'язкова
 - **Відповідь (`200 OK`):**
@@ -220,7 +218,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Завантажує зашифрований JSON-payload в ізольовану `appDataFolder` користувача.
+Завантажує зашифрований корисний навантаження у заізольовану `appDataFolder` користувача.
 
 - **Автентифікація:** Обов'язкова
 - **Тіло запиту:**
@@ -243,7 +241,7 @@ Accept: application/json
 ## 6. Двигун AI-асистента (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
-Надає діалоговий фінансовий аналіз та поради щодо оптимізації тарифів за допомогою Google Gemini API.
+Надає розмовний фінансовий аналіз та поради з оптимізації тарифів за допомогою Google Gemini API.
 
 - **Автентифікація:** Обов'язкова
 - **Тіло запиту:**
@@ -270,7 +268,7 @@ Accept: application/json
 
 ---
 
-## 7. Коди стану HTTP та обробка помилок
+## 7. HTTP-статусы та обробка помилок
 
 | Код | Статус | Значення |
 | :---: | :--- | :--- |
@@ -278,9 +276,9 @@ Accept: application/json
 | `201` | Created | Ресурс успішно створено. |
 | `400` | Bad Request | Некоректне тіло JSON або недійсний параметр. |
 | `401` | Unauthorized | Відсутній або прострочений токен Bearer JWT. |
-| `403` | Forbidden | Недостатньо прав у межах Row Level Security. |
-| `404` | Not Found | Запитувана сутність не існує. |
-| `429` | Too Many Requests | Перевищено ліміт запитів (Макс. 100 запитів / хвилину). |
+| `403` | Forbidden | Недостатньо прав згідно з Row Level Security. |
+| `404` | Not Found | Запитана сутність не існує. |
+| `429` | Too Many Requests | Перевищено ліміт запитів (максимум 100 запитів / хвилину). |
 | `500` | Internal Server Error | Збій бази даних або необроблений виняток. |
 
 ---
