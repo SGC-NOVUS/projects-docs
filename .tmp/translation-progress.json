@@ -140,41 +140,6 @@
       "source": "content/novus-life/novus-life-general/architecture.en.md",
       "locale": "ru",
       "translation": "Novus-Life — Руководство по системной архитектуре и проектированию"
-    },
-    "c04136988a79a92540bcb828e6c90b44f7151b38d43e7c480d69a2ae676ea5be": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "Novus-Life — Довідник REST API та посібник з інтеграції"
-    },
-    "0b27bb08b29c09f3b3061ba9b81a52bf5274da7916225483c2c371cd025ae75f": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api (Production) або http://localhost:3001/api (Local Dev) > **Authentication:** Bearer Tok..."
-    },
-    "a51f03f96f725dbd5b4790f15041f0d1a36081117108cd884fc3373770794a5f": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "# Novus Life — Довідник REST API та посібник з інтеграції\n\n> **Версія:** 1.0.0-beta Enterprise Edition  \n> **Базова URL-адреса:** `https://novus-life.online/api` (Продакшн) або `http://localhost:3001/api` (Локальна розробка)  \n> **Автентифікація:** Bearer Token (`Authorization: Bearer <JWT>`)  \n> **Контракт OpenAPI 3.1:** Доступно в [openapi.yaml](openapi.yaml) та [openapi.json](openapi.json)\n\n---\n\n## 1. Глобальні стандарти запитів і відповідей\n\n### Стандартні заголовки\nУсі автентифіковані кінцеві точки (endpoints) API вимагають наявності таких заголовків:\n```http\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\nContent-Type: application/json\nAccept: application/json\n```\n\n### Стандартний формат відповіді про помилку\n```json\n{\n  \"error\": \"Short human-readable error description\",\n  \"code\": \"INVALID_CREDENTIALS\",\n  \"details\": []\n}\n```\n\n---\n\n## 2. Працездатність та діагностика\n\n### `GET /api/health`\nПеревіряє час безперебійної роботи фонового процесу та статус пулу підключень PostgreSQL.\n\n- **Автентифікація:** Відсутня (Публічна)\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"status\": \"healthy\",\n  \"timestamp\": \"2026-10-27T15:00:00.000Z\",\n  \"version\": \"1.0.0-beta\",\n  \"database\": \"connected\",\n  \"uptimeSeconds\": 86400\n}\n```\n\n---"
-    },
-    "f5e61aea1202bae8a991df4e9e1c2cfdbe5c091d86a0e953b1d4debe88da473b": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "## 3. Автентифікація та керування обліковими записами (`/api/auth`)\n\n### `POST /api/auth/register`\nСтворює новий обліковий запис користувача з хешуванням пароля із сіллю (`bcryptjs`).\n\n- **Тіло запиту (Request Body):**\n```json\n{\n  \"email\": \"user@example.com\",\n  \"password\": \"StrongPassword123!\",\n  \"displayName\": \"Alex Doe\"\n}\n```\n- **Відповідь (`201 Created`):**\n```json\n{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"Alex Doe\",\n    \"isVerified\": false,\n    \"createdAt\": \"2026-10-27T15:00:00.000Z\"\n  }\n}\n```\n\n### `POST /api/auth/login`\nАвтентифікує облікові дані користувача та видає підписаний JWT токен.\n\n- **Тіло запиту (Request Body):**\n```json\n{\n  \"email\": \"user@example.com\",\n  \"password\": \"StrongPassword123!\"\n}\n```\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"Alex Doe\"\n  }\n}\n```"
-    },
-    "cb2ce5eeceb475c2051aa3da39a4fb92d06b9a6d7fb19b39888731bd251b893e": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "### `GET /api/auth/me`\nОтримує профіль поточного автентифікованого користувача.\n\n- **Автентифікація:** Обов'язкова\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n  \"email\": \"user@example.com\",\n  \"displayName\": \"Alex Doe\",\n  \"familyId\": \"0192e215-4fa2-7b21-8b10-e75b92f91a14\",\n  \"isVerified\": true\n}\n```\n\n---\n\n## 4. Багатокористувацька дельта-синхронизація (`/api/sync`)\n\nПротокол синхронізації координує стан між клієнтською IndexedDB (`Dexie.js`) та основною базою даних PostgreSQL.\n\n### `GET /api/sync`\nОтримує змінені записи в усіх 12 доменних таблицях з моменту надання вказаної позначки часу.\n\n- **Автентифікація:** Обов'язкова\n- **Параметри запиту:**\n  - `since` *(рядок, ISO 8601)*: Позначка часу останньої успішної локальної синхронізації. Приклад: `?since=2026-10-27T12:00:00.000Z`.\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"serverTime\": \"2026-10-27T15:30:00.000Z\",\n  \"addresses\": [\n    {\n      \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n      \"name\": \"Main Apartment\",\n      \"color\": \"#6366f1\",\n      \"area\": 75.5,\n      \"residentsCount\": 3,\n      \"valuta\": \"USD\",\n      \"updatedAt\": \"2026-10-27T14:15:00.000Z\"\n    }\n  ],\n  \"services\": [],\n  \"tariffs\": [],\n  \"utilities\": [],\n  \"payments\": [],\n  \"reminders\": [],\n  \"schedules\": [],\n  \"shifts\": [],\n  \"financialAccounts\": [],\n  \"financialTransactions\": [],\n  \"budgetCategories\": [],\n  \"piggyBanks\": []\n}\n```"
-    },
-    "b8df5992ed4e2d02da41f5c18237cf44f11b2c6619b002e033bb549d87fdcb0e": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "### `POST /api/sync`\nПередає локально створені або змінені записи на сервер з використанням злиття типу upsert.\n\n- **Автентифікація:** Обов'язкова\n- **Тіло запиту:**\n```json\n{\n  \"clientTime\": \"2026-10-27T15:30:00.000Z\",\n  \"addresses\": [ ... ],\n  \"services\": [ ... ],\n  \"tariffs\": [ ... ],\n  \"utilities\": [ ... ],\n  \"payments\": [ ... ],\n  \"reminders\": [ ... ],\n  \"schedules\": [ ... ],\n  \"shifts\": [ ... ],\n  \"financialAccounts\": [ ... ],\n  \"financialTransactions\": [ ... ],\n  \"budgetCategories\": [ ... ],\n  \"piggyBanks\": [ ... ]\n}\n```\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"status\": \"success\",\n  \"syncedAt\": \"2026-10-27T15:30:01.000Z\",\n  \"rowsUpserted\": 42\n}\n```\n\n---\n\n## 5. Зашифроване сховище Google Drive (`/api/drive`)\n\n### `GET /api/drive/status`\nПеревіряє, чи авторизував поточний користувач особисте сховище резервних копій на Google Drive.\n\n- **Автентифікація:** Обов'язкова\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"isConnected\": true,\n  \"lastBackupAt\": \"2026-10-26T22:00:00.000Z\",\n  \"vaultFileId\": \"1a2b3c4d5e6f7g8h9i0j\"\n}\n```"
-    },
-    "4e59d978f150258c4d65c6a7dc15bba91de7bc084091e3ed2425802ebb037f96": {
-      "source": "content/novus-life/novus-life-general/api-reference.en.md",
-      "locale": "uk",
-      "translation": "### `POST /api/drive/backup`\nЗавантажує зашифрований корисний навантаження (payload) у захищену `appDataFolder` користувача.\n\n- **Автентифікація:** Обов'язкова\n- **Тіло запиту:**\n```json\n{\n  \"encryptedData\": \"U2FsdGVkX19+...\",\n  \"checksum\": \"a3b2c1...\"\n}\n```\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"success\": true,\n  \"uploadedAt\": \"2026-10-27T15:35:00.000Z\"\n}\n```\n\n---\n\n## 6. Двигун AI-асистента (`/api/gemini`)\n\n### `POST /api/gemini/chat`\nНадає розмовний фінансовий аналіз та поради щодо оптимізації тарифів за допомогою Google Gemini API.\n\n- **Автентифікація:** Обов'язкова\n- **Тіло запиту:**\n```json\n{\n  \"message\": \"How can I reduce my electric bill under a 2-tier day/night tariff?\",\n  \"context\": {\n    \"currentTariff\": \"two_tier\",\n    \"dayRate\": 4.32,\n    \"nightRate\": 2.16\n  }\n}\n```\n- **Відповідь (`200 OK`):**\n```json\n{\n  \"reply\": \"Under your two-tier tariff, night electricity is 50% cheaper between 23:00 and 07:00...\",\n  \"suggestedActions\": [\n    \"Schedule water heater timer between 23:00 and 06:00\",\n    \"Run washing machine after 23:00\"\n  ]\n}\n```\n\n---"
     }
   }
 }

@@ -5,7 +5,7 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus-Life — Справочник по REST API и руководство по интеграции
+title: Novus Life — Справочник по REST API и руководство по интеграции
 description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
   (Production) или http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
   Tok...'
@@ -17,10 +17,10 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus Life — Справочник REST API и руководство по интеграции
+# Novus-Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
-> **Базовый URL:** `https://novus-life.online/api` (Продакшн) или `http://localhost:3001/api` (Локальная разработка)  
+> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (Локальная разработка)  
 > **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  
 > **Контракт OpenAPI 3.1:** Доступен в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)
 
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех эндпоинтов API, требующих аутентификации, необходимы следующие заголовки:
+Для всех защищенных API-эндпоинтов требуются следующие заголовки:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартный формат ответа об ошибке
 ```json
 {
-  "error": "Short human-readable error description",
+  "error": "Краткое понятное описание ошибки",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -47,12 +47,12 @@ Accept: application/json
 
 ---
 
-## 2. Состояние и диагностика
+## 2. Состояние системы и диагностика
 
 ### `GET /api/health`
-Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений с PostgreSQL.
 
-- **Аутентификация:** Не требуется (Публичный)
+- **Аутентификация:** Отсутствует (Публичный)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -69,7 +69,7 @@ Accept: application/json
 ## 3. Аутентификация и управление учетными записями (`/api/auth`)
 
 ### `POST /api/auth/register`
-Создает новую учетную запись пользователя с хешированием пароля с использованием соли (`bcryptjs`).
+Создает новую учетную запись пользователя с хешированием пароля с добавлением «соли» (`bcryptjs`).
 
 - **Тело запроса:**
 ```json
@@ -94,7 +94,7 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Выполняет аутентификацию учетных данных пользователя и выдает подписанный JWT токен.
+Выполняет аутентификацию учетных данных пользователя и выдает подписанный JWT-токен.
 
 - **Тело запроса:**
 ```json
@@ -132,12 +132,12 @@ Accept: application/json
 
 ---
 
-## 4. Многопоточная дельта-синхронизация (`/api/sync`)
+## 4. Многопотоковая дельта-синхронизация (`/api/sync`)
 
-Протокол синхронизации координирует состояние между клиентской базой данных IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
+Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и основной базой данных PostgreSQL.
 
 ### `GET /api/sync`
-Возвращает измененные записи по всем 12 доменным таблицам с момента указанной метки времени.
+Возвращает измененные записи во всех 12 доменных таблицах с момента указанной метки времени.
 
 - **Аутентификация:** Требуется
 - **Параметры запроса:**
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Передает созданные или измененные локально записи на сервер с использованием слияния по типу upsert.
+Отправляет созданные или измененные локально записи на сервер с использованием слияния типа upsert.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -277,10 +277,10 @@ Accept: application/json
 | `200` | OK | Запрос успешно выполнен. |
 | `201` | Created | Ресурс успешно создан. |
 | `400` | Bad Request | Некорректное тело JSON или неверный параметр. |
-| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT token. |
+| `401` | Unauthorized | Отсутствует или просрочен токен Bearer JWT. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
 | `404` | Not Found | Запрашиваемая сущность не существует. |
-| `429` | Too Many Requests | Превышен лимит запросов (Максимум 100 запросов / минута). |
+| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
 | `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
 
 ---
