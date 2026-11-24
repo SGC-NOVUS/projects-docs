@@ -140,6 +140,36 @@
       "source": "content/novus-life/novus-life-general/architecture.en.md",
       "locale": "ru",
       "translation": "Novus-Life — Руководство по системной архитектуре и проектированию"
+    },
+    "00132026412fd5e22ebee24110fc9b9bd9bea038b35a5ddcfcf563ea170b05f4": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "Novus-Life — Справочник по REST API и руководство по интеграции"
+    },
+    "16e7224870dd5a5803e18669e53bb851ea337e709fced1fe2f120c577177c7d9": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api (Production) или http://localhost:3001/api (Local Dev) > **Authentication:** Bearer Tok..."
+    },
+    "61dd8c8207049e061a4110efe026dec8c5db5d2f30fa0a2b859ae6ba378527f4": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "# Novus-Life — Справочник REST API и руководство по интеграции\n\n> **Версия:** 1.0.0-beta Enterprise Edition  \n> **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  \n> **Аутентификация:** Bearer Token (`Authorization: Bearer <JWT>`)  \n> **Спецификация OpenAPI 3.1:** Доступна в [openapi.yaml](openapi.yaml) и [openapi.json](openapi.json)\n\n---\n\n## 1. Глобальные стандарты запросов и ответов\n\n### Стандартные заголовки\nВсе защищенные конечные точки API требуют наличия следующих заголовков:\n```http\nAuthorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\nContent-Type: application/json\nAccept: application/json\n```\n\n### Стандартный формат ответа об ошибке\n```json\n{\n  \"error\": \"Краткое описание ошибки, понятное человеку\",\n  \"code\": \"INVALID_CREDENTIALS\",\n  \"details\": []\n}\n```\n\n---\n\n## 2. Состояние и диагностика\n\n### `GET /api/health`\nПроверяет время непрерывной работы бэкенд-процесса и статус пула соединений PostgreSQL.\n\n- **Аутентификация:** Отсутствует (публичный доступ)\n- **Ответ (`200 OK`):**\n```json\n{\n  \"status\": \"healthy\",\n  \"timestamp\": \"2026-10-27T15:00:00.000Z\",\n  \"version\": \"1.0.0-beta\",\n  \"database\": \"connected\",\n  \"uptimeSeconds\": 86400\n}\n```\n\n---"
+    },
+    "9328581f3e3d3612b1c59518d4cb7de919fbeaa8622c62a29f0e2184429613c1": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "## 3. Аутентификация и управление учетными записями (`/api/auth`)\n\n### `POST /api/auth/register`\nСоздает новую учетную запись пользователя с хешированием пароля с добавлением «соли» (`bcryptjs`).\n\n- **Тело запроса:**\n```json\n{\n  \"email\": \"user@example.com\",\n  \"password\": \"StrongPassword123!\",\n  \"displayName\": \"Alex Doe\"\n}\n```\n- **Ответ (`201 Created`):**\n```json\n{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"Alex Doe\",\n    \"isVerified\": false,\n    \"createdAt\": \"2026-10-27T15:00:00.000Z\"\n  }\n}\n```\n\n### `POST /api/auth/login`\nВыполняет аутентификацию учетных данных пользователя и выдает подписанный токен JWT.\n\n- **Тело запроса:**\n```json\n{\n  \"email\": \"user@example.com\",\n  \"password\": \"StrongPassword123!\"\n}\n```\n- **Ответ (`200 OK`):**\n```json\n{\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n    \"email\": \"user@example.com\",\n    \"displayName\": \"Alex Doe\"\n  }\n}\n```"
+    },
+    "f5fd0984e4c5d91c23110c1e52e80ed9ce9dce2eeb91ede9e539ec3527cce674": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "### `GET /api/auth/me`\nВозвращает профиль текущего аутентифицированного пользователя.\n\n- **Аутентификация:** Требуется\n- **Ответ (`200 OK`):**\n```json\n{\n  \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n  \"email\": \"user@example.com\",\n  \"displayName\": \"Alex Doe\",\n  \"familyId\": \"0192e215-4fa2-7b21-8b10-e75b92f91a14\",\n  \"isVerified\": true\n}\n```\n\n---\n\n## 4. Многопоточная дельта-синхронизация (`/api/sync`)\n\nПротокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и основной базой данных PostgreSQL.\n\n### `GET /api/sync`\nПолучает измененные записи по всем 12 доменным таблицам с момента указанной временной метки.\n\n- **Аутентификация:** Требуется\n- **Параметры запроса:**\n  - `since` *(string, ISO 8601)*: Временная метка последней успешной локальной синхронизации. Пример: `?since=2026-10-27T12:00:00.000Z`.\n- **Ответ (`200 OK`):**\n```json\n{\n  \"serverTime\": \"2026-10-27T15:30:00.000Z\",\n  \"addresses\": [\n    {\n      \"id\": \"0192e210-67a8-7d31-9f20-b44c20e18d09\",\n      \"name\": \"Main Apartment\",\n      \"color\": \"#6366f1\",\n      \"area\": 75.5,\n      \"residentsCount\": 3,\n      \"valuta\": \"USD\",\n      \"updatedAt\": \"2026-10-27T14:15:00.000Z\"\n    }\n  ],\n  \"services\": [],\n  \"tariffs\": [],\n  \"utilities\": [],\n  \"payments\": [],\n  \"reminders\": [],\n  \"schedules\": [],\n  \"shifts\": [],\n  \"financialAccounts\": [],\n  \"financialTransactions\": [],\n  \"budgetCategories\": [],\n  \"piggyBanks\": []\n}\n```"
+    },
+    "dd49b01c59f063985f802eed9d2f21ecd48a12d2a25152bc28bb44808d04c486": {
+      "source": "content/novus-life/novus-life-general/api-reference.en.md",
+      "locale": "ru",
+      "translation": "### `POST /api/sync`\nОтправляет созданные или измененные локально записи на сервер с применением слияния типа upsert.\n\n- **Аутентификация:** Требуется\n- **Тело запроса:**\n```json\n{\n  \"clientTime\": \"2026-10-27T15:30:00.000Z\",\n  \"addresses\": [ ... ],\n  \"services\": [ ... ],\n  \"tariffs\": [ ... ],\n  \"utilities\": [ ... ],\n  \"payments\": [ ... ],\n  \"reminders\": [ ... ],\n  \"schedules\": [ ... ],\n  \"shifts\": [ ... ],\n  \"financialAccounts\": [ ... ],\n  \"financialTransactions\": [ ... ],\n  \"budgetCategories\": [ ... ],\n  \"piggyBanks\": [ ... ]\n}\n```\n- **Ответ (`200 OK`):**\n```json\n{\n  \"status\": \"success\",\n  \"syncedAt\": \"2026-10-27T15:30:01.000Z\",\n  \"rowsUpserted\": 42\n}\n```\n\n---\n\n## 5. Зашифрованное хранилище Google Drive (`/api/drive`)\n\n### `GET /api/drive/status`\nПроверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий на Google Drive.\n\n- **Аутентификация:** Требуется\n- **Ответ (`200 OK`):**\n```json\n{\n  \"isConnected\": true,\n  \"lastBackupAt\": \"2026-10-26T22:00:00.000Z\",\n  \"vaultFileId\": \"1a2b3c4d5e6f7g8h9i0j\"\n}\n```"
     }
   }
 }
