@@ -5,10 +5,10 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus Life — Справочник REST API и руководство по интеграции
-description: '> **Версия:** 1.0.0-beta Enterprise Edition > **Базовый URL:** https://novus-life.online/api
-  (Production) или http://localhost:3001/api (Локальная разработка) > **Аутентификация:**
-  Bearer Tok...'
+title: Novus-Life — Справочник по REST API и руководство по интеграции
+description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
+  (Production) или http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
+  Tok...'
 last_updated: '2026-10-27'
 source_locale: en
 locale: ru
@@ -17,7 +17,7 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus Life — Справочник REST API и руководство по интеграции
+# Novus-Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
 > **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Все аутентифицированные эндпоинты API требуют следующих заголовков:
+Для всех защищенных эндпоинтов API требуются следующие заголовки:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартный формат ответа об ошибке
 ```json
 {
-  "error": "Short human-readable error description",
+  "error": "Краткое понятное для человека описание ошибки",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -47,12 +47,12 @@ Accept: application/json
 
 ---
 
-## 2. Проверка состояния и диагностика
+## 2. Работоспособность и диагностика
 
 ### `GET /api/health`
-Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений PostgreSQL.
+Проверяет время безотказной работы бэкенд-процесса и статус пула соединений PostgreSQL.
 
-- **Аутентификация:** Отсутствует (Публичный)
+- **Аутентификация:** Отсутствует (публичный эндпоинт)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -69,7 +69,7 @@ Accept: application/json
 ## 3. Аутентификация и управление учетными записями (`/api/auth`)
 
 ### `POST /api/auth/register`
-Создает новую учетную запись пользователя с хешированием пароля с добавлением «соли» (`bcryptjs`).
+Создает новую учетную запись пользователя с хешированием пароля с добавлением соли (`bcryptjs`).
 
 - **Тело запроса:**
 ```json
@@ -94,7 +94,7 @@ Accept: application/json
 ```
 
 ### `POST /api/auth/login`
-Выполняет аутентификацию учетных данных пользователя и выдает подписанный JWT-токен.
+Выполняет аутентификацию учетных данных пользователя и выдает подписанный JWT токен.
 
 - **Тело запроса:**
 ```json
@@ -204,10 +204,10 @@ Accept: application/json
 
 ---
 
-## 5. Google Drive Encrypted Vault (`/api/drive`)
+## 5. Зашифрованное хранилище Google Drive (`/api/drive`)
 
 ### `GET /api/drive/status`
-Проверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий в Google Drive.
+Проверяет, авторизовал ли текущий пользователь персональное хранилище резервных копий на Google Drive.
 
 - **Аутентификация:** Требуется
 - **Ответ (`200 OK`):**
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Загружает зашифрованный JSON-пайлоуд в изолированную папку пользователя `appDataFolder`.
+Загружает зашифрованный JSON-пайлоуд в изолированную `appDataFolder` пользователя.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -240,7 +240,7 @@ Accept: application/json
 
 ---
 
-## 6. Движок AI Assistant (`/api/gemini`)
+## 6. AI Assistant Engine (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
 Предоставляет интерактивный финансовый анализ и рекомендации по оптимизации тарифов с использованием Google Gemini API.
@@ -270,16 +270,16 @@ Accept: application/json
 
 ---
 
-## 7. HTTP Status Codes & Error Handling
+## 7. HTTP-коды состояния и обработка ошибок
 
 | Код | Статус | Значение |
 | :---: | :--- | :--- |
-| `200` | OK | Запрос выполнен успешно. |
+| `200` | OK | Запрос успешно выполнен. |
 | `201` | Created | Ресурс успешно создан. |
-| `400` | Bad Request | Некорректное тело JSON или неверный параметр. |
-| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT токена. |
+| `400` | Bad Request | Некорректный JSON-тело или неверный параметр. |
+| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT-токена. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
-| `404` | Not Found | Запрашиваемая сущность не существует. |
+| `404` | Not Found | Запрошенная сущность не существует. |
 | `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
 | `500` | Internal Server Error | Сбой базы данных или необрабатываемое исключение. |
 
