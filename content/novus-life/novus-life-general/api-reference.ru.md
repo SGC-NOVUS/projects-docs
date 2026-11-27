@@ -5,10 +5,10 @@ category: novus-life-general
 order: 100
 status: active
 version: 0.1.0
-title: Novus-Life — Справочник по REST API и руководство по интеграции
-description: '> **Version:** 1.0.0-beta Enterprise Edition > **Base URL:** https://novus-life.online/api
-  (Production) или http://localhost:3001/api (Local Dev) > **Authentication:** Bearer
-  Tok...'
+title: Novus Life — Справочник REST API и руководство по интеграции
+description: '> **Версия:** 1.0.0-beta Enterprise Edition > **Базовый URL:** https://novus-life.online/api
+  (Production) или http://localhost:3001/api (Локальная разработка) > **Аутентификация:**
+  Bearer Tok...'
 last_updated: '2026-10-27'
 source_locale: en
 locale: ru
@@ -17,7 +17,7 @@ source_branch: main
 source_path: docs/API_REFERENCE.md
 managed_by: sync_private_docs
 ---
-# Novus-Life — Справочник REST API и руководство по интеграции
+# Novus Life — Справочник REST API и руководство по интеграции
 
 > **Версия:** 1.0.0-beta Enterprise Edition  
 > **Базовый URL:** `https://novus-life.online/api` (Production) или `http://localhost:3001/api` (локальная разработка)  
@@ -29,7 +29,7 @@ managed_by: sync_private_docs
 ## 1. Глобальные стандарты запросов и ответов
 
 ### Стандартные заголовки
-Для всех защищенных эндпоинтов API требуются следующие заголовки:
+Все аутентифицированные эндпоинты API требуют следующих заголовков:
 ```http
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Content-Type: application/json
@@ -39,7 +39,7 @@ Accept: application/json
 ### Стандартный формат ответа об ошибке
 ```json
 {
-  "error": "Краткое понятное описание ошибки",
+  "error": "Short human-readable error description",
   "code": "INVALID_CREDENTIALS",
   "details": []
 }
@@ -47,12 +47,12 @@ Accept: application/json
 
 ---
 
-## 2. Состояние и диагностика
+## 2. Проверка состояния и диагностика
 
 ### `GET /api/health`
-Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений с PostgreSQL.
+Проверяет время непрерывной работы бэкенд-процесса и статус пула соединений PostgreSQL.
 
-- **Аутентификация:** Не требуется (публичный эндпоинт)
+- **Аутентификация:** Отсутствует (Публичный)
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -134,14 +134,14 @@ Accept: application/json
 
 ## 4. Многопоточная дельта-синхронизация (`/api/sync`)
 
-Протокол синхронизации координирует состояние между клиентской IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
+Протокол синхронизации координирует состояние между клиентской базой данных IndexedDB (`Dexie.js`) и мастер-базой данных PostgreSQL.
 
 ### `GET /api/sync`
-Получает измененные записи по всем 12 доменным таблицам с момента указанной временной метки.
+Возвращает измененные записи по всем 12 доменным таблицам с момента указанной метки времени.
 
 - **Аутентификация:** Требуется
 - **Параметры запроса:**
-  - `since` *(string, ISO 8601)*: Временная метка последней успешной локальной синхронизации. Пример: `?since=2026-10-27T12:00:00.000Z`.
+  - `since` *(string, ISO 8601)*: Метка времени последней успешной локальной синхронизации. Пример: `?since=2026-10-27T12:00:00.000Z`.
 - **Ответ (`200 OK`):**
 ```json
 {
@@ -172,7 +172,7 @@ Accept: application/json
 ```
 
 ### `POST /api/sync`
-Выгружает созданные или измененные локально записи на сервер с использованием слияния типа upsert.
+Отправляет созданные или измененные локально записи на сервер с использованием слияния типа upsert.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -220,7 +220,7 @@ Accept: application/json
 ```
 
 ### `POST /api/drive/backup`
-Загружает зашифрованный JSON-пайлоуд в изолированную папку `appDataFolder` пользователя.
+Загружает зашифрованный JSON-пайлоуд в изолированную папку пользователя `appDataFolder`.
 
 - **Аутентификация:** Требуется
 - **Тело запроса:**
@@ -240,7 +240,7 @@ Accept: application/json
 
 ---
 
-## 6. AI Assistant Engine (`/api/gemini`)
+## 6. Движок AI Assistant (`/api/gemini`)
 
 ### `POST /api/gemini/chat`
 Предоставляет интерактивный финансовый анализ и рекомендации по оптимизации тарифов с использованием Google Gemini API.
@@ -272,16 +272,16 @@ Accept: application/json
 
 ## 7. HTTP Status Codes & Error Handling
 
-| Code | Status | Meaning |
+| Код | Статус | Значение |
 | :---: | :--- | :--- |
-| `200` | OK | Запрос успешно выполнен. |
+| `200` | OK | Запрос выполнен успешно. |
 | `201` | Created | Ресурс успешно создан. |
 | `400` | Bad Request | Некорректное тело JSON или неверный параметр. |
-| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT token. |
+| `401` | Unauthorized | Отсутствует или истек срок действия Bearer JWT токена. |
 | `403` | Forbidden | Недостаточно прав в соответствии с Row Level Security. |
-| `404` | Not Found | Запрошенная сущность не существует. |
-| `429` | Too Many Requests | Превышен лимит запросов (Максимум 100 запросов / минута). |
-| `500` | Internal Server Error | Сбой базы данных или необработанное исключение. |
+| `404` | Not Found | Запрашиваемая сущность не существует. |
+| `429` | Too Many Requests | Превышен лимит запросов (максимум 100 запросов в минуту). |
+| `500` | Internal Server Error | Сбой базы данных или необрабатываемое исключение. |
 
 ---
 
